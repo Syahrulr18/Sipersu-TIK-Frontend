@@ -10,7 +10,6 @@ import ModalTambahSurat from './ModalTambahSurat';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { getStatusOptions } from '@/utils/formatStatus';
 
-// Demo data matching mockup
 const demoSuratList = [
   {
     id: 1, nomor_surat: 'M.001/9/KL.01.00/2026', hal: 'Permohonan Izin Magang Industri',
