@@ -1,8 +1,10 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from '@/layouts/MainLayout';
 import AuthLayout from '@/layouts/AuthLayout';
+import useAuthStore from '@/store/authStore';
 import PrivateRoute from './PrivateRoute';
 import RoleRoute from './RoleRoute';
+import PublicRoute from './PublicRoute';
 
 // Pages
 import Login from '@/pages/auth/Login';
@@ -12,6 +14,7 @@ import DetailSurat from '@/pages/surat/DetailSurat';
 import EditKonten from '@/pages/surat/EditKonten';
 import Verifikasi from '@/pages/verifikasi/Verifikasi';
 import TandaTangan from '@/pages/tandatangan/TandaTangan';
+import PersetujuanSurat from '@/pages/tandatangan/PersetujuanSurat';
 import Notifikasi from '@/pages/notifikasi/Notifikasi';
 import ManajemenUser from '@/pages/admin/ManajemenUser';
 import Profil from '@/pages/profil/Profil';
@@ -20,10 +23,19 @@ import Profil from '@/pages/profil/Profil';
  * AppRoutes — defines all application routes.
  */
 const AppRoutes = () => {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const defaultRedirect = isAuthenticated ? '/dashboard' : '/login';
+
   return (
     <Routes>
       {/* Auth routes */}
-      <Route element={<AuthLayout />}>
+      <Route
+        element={
+          <PublicRoute>
+            <AuthLayout />
+          </PublicRoute>
+        }
+      >
         <Route path="/login" element={<Login />} />
       </Route>
 
@@ -62,6 +74,14 @@ const AppRoutes = () => {
             </RoleRoute>
           }
         />
+        <Route
+          path="/tandatangan/:id"
+          element={
+            <RoleRoute roles={['kajur']}>
+              <PersetujuanSurat />
+            </RoleRoute>
+          }
+        />
         <Route path="/notifikasi" element={<Notifikasi />} />
         <Route
           path="/admin/users"
@@ -75,8 +95,8 @@ const AppRoutes = () => {
       </Route>
 
       {/* Fallback */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<Navigate to={defaultRedirect} replace />} />
+      <Route path="*" element={<Navigate to={defaultRedirect} replace />} />
     </Routes>
   );
 };

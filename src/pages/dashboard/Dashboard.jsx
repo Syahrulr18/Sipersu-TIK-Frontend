@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Search, Folder, FileEdit, FileCheck, Edit, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import useAuthStore from '@/store/authStore';
+import usePageTitleStore from '@/store/pageTitleStore';
 import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -38,14 +39,85 @@ const demoAllSurat = [
 
 const Dashboard = () => {
   const user = useAuthStore((s) => s.user);
-  const isAdmin = user?.role === 'administrator';
+  const role = user?.role;
+  const isAdmin = role === 'administrator';
+  const isKajur = role === 'kajur';
+  const isVerifikator = role === 'verifikator';
+  const isDosen = role === 'dosen';
+  const setPageTitle = usePageTitleStore((s) => s.setTitle);
 
   const [activeTab, setActiveTab] = useState('Semua Draf');
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
-  const tabs = ['Semua Draf', 'Menunggu Verifikasi Sekjur', 'Menunggu Perse'];
+  useEffect(() => {
+    setPageTitle('Daftar Surat');
+    return () => setPageTitle('');
+  }, [setPageTitle]);
+
+  // Tab dinamis berdasarkan role
+  const getTabs = () => {
+    if (isAdmin) return ['Semua Draf', 'Menunggu Verifikasi Sekjur', 'Menunggu Perse'];
+    if (isKajur) return ['Menunggu Persetujuan'];
+    if (isVerifikator) return ['Menunggu Verifikasi'];
+    if (isDosen) return ['Surat Terkirim'];
+    return ['Semua Draf'];
+  };
+
+  const tabs = getTabs();
+
+  // Filter data berdasarkan role dan tab aktif
+  const getFilteredData = () => {
+    if (isKajur) {
+      return demoAllSurat.filter(s => s.status === 'Menunggu Persetujuan Kajur');
+    }
+    if (isVerifikator) {
+      return demoAllSurat.filter(s => s.status === 'Menunggu Verifikasi Sekjur');
+    }
+    if (isDosen) {
+      return demoAllSurat.filter(s => s.status === 'Telah Disetujui');
+    }
+    // Admin: filter berdasarkan tab
+    if (activeTab === 'Menunggu Verifikasi Sekjur') {
+      return demoAllSurat.filter(s => s.status === 'Menunggu Verifikasi Sekjur');
+    }
+    if (activeTab === 'Menunggu Perse') {
+      return demoAllSurat.filter(s => s.status === 'Menunggu Persetujuan Kajur');
+    }
+    return demoAllSurat;
+  };
+
+  // Stat cards dinamis berdasarkan role
+  const getStatCards = () => {
+    if (isKajur) {
+      return [
+        { label: 'Menunggu Persetujuan', value: '12', icon: Folder, color: 'red' },
+        { label: 'Telah Disetujui', value: '85', icon: FileCheck, color: 'green' },
+        { label: 'Ditolak', value: '4', icon: FileEdit, color: 'red' },
+      ];
+    }
+    if (isVerifikator) {
+      return [
+        { label: 'Menunggu Verifikasi', value: '12', icon: Folder, color: 'red' },
+        { label: 'Telah Diverifikasi', value: '148', icon: FileCheck, color: 'green' },
+        { label: 'Perlu Perbaikan', value: '3', icon: FileEdit, color: 'red' },
+      ];
+    }
+    if (isDosen) {
+      return [
+        { label: 'Total Surat', value: '12', icon: Folder, color: 'red' },
+      ];
+    }
+    return [
+      { label: 'Total Draf Aktif', value: '24', icon: Folder, color: 'red' },
+      { label: 'Perlu Revisi', value: '3', icon: FileEdit, color: 'yellow' },
+      { label: 'Terkirim', value: '12', icon: FileCheck, color: 'green' },
+    ];
+  };
+
+  const filteredData = getFilteredData();
+  const statCards = getStatCards();
 
   const StatusBadge = ({ status, type }) => {
     const config = {
@@ -68,65 +140,55 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Daftar Surat</h1>
-
       {/* Stat cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="card p-6 flex flex-col justify-between border border-gray-100 shadow-sm relative overflow-hidden bg-white">
-          <p className="text-sm text-gray-500 font-medium z-10">Total Draf Aktif</p>
-          <div className="flex items-end justify-between mt-2 z-10">
-            <p className="text-4xl font-bold text-gray-900">24</p>
-            <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center border border-red-100">
-              <Folder className="w-5 h-5 text-[#8B0000]" />
+      <div className={`grid gap-6 ${statCards.length === 3 ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1'}`}>
+        {statCards.map((card, idx) => (
+          <div key={idx} className="card p-6 flex flex-col justify-between border border-gray-100 shadow-sm relative overflow-hidden bg-white">
+            <p className="text-sm text-gray-500 font-medium z-10">{card.label}</p>
+            <div className="flex items-end justify-between mt-2 z-10">
+              <p className="text-4xl font-bold text-gray-900">{card.value}</p>
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
+                card.color === 'red' ? 'bg-red-50 border-red-100' :
+                card.color === 'green' ? 'bg-green-50 border-green-100' :
+                'bg-yellow-50 border-yellow-100'
+              }`}>
+                <card.icon className={`w-5 h-5 ${
+                  card.color === 'red' ? 'text-[#8B0000]' :
+                  card.color === 'green' ? 'text-green-500' :
+                  'text-yellow-600'
+                }`} />
+              </div>
             </div>
           </div>
-        </div>
-
-        <div className="card p-6 flex flex-col justify-between border border-gray-100 shadow-sm relative overflow-hidden bg-white">
-          <p className="text-sm text-gray-500 font-medium z-10">Perlu Revisi</p>
-          <div className="flex items-end justify-between mt-2 z-10">
-            <p className="text-4xl font-bold text-gray-900">3</p>
-            <div className="w-10 h-10 bg-yellow-50 rounded-lg flex items-center justify-center border border-yellow-100">
-              <FileEdit className="w-5 h-5 text-yellow-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="card p-6 flex flex-col justify-between border border-gray-100 shadow-sm relative overflow-hidden bg-white">
-          <p className="text-sm text-gray-500 font-medium z-10">Terkirim</p>
-          <div className="flex items-end justify-between mt-2 z-10">
-            <p className="text-4xl font-bold text-gray-900">12</p>
-            <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center border border-green-100">
-              <FileCheck className="w-5 h-5 text-green-500" />
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Filters and Table Area */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col">
         {/* Toolbar */}
         <div className="flex flex-wrap items-center justify-between gap-4 p-4 border-b border-gray-100">
-          {/* Tabs */}
-          <div className="flex items-center gap-2">
-            {tabs.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`
-                  px-5 py-2.5 text-[13px] font-semibold rounded-lg transition-all
-                  ${activeTab === tab
-                    ? 'bg-red-50 text-[#8B0000]'
-                    : 'bg-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50'
-                  }
-                `}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
+          {/* Tabs - hanya tampil untuk admin */}
+          {isAdmin && (
+            <div className="flex items-center gap-2">
+              {tabs.map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`
+                    px-5 py-2.5 text-[13px] font-semibold rounded-lg transition-all
+                    ${activeTab === tab
+                      ? 'bg-red-50 text-[#8B0000]'
+                      : 'bg-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                    }
+                  `}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+          )}
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 ml-auto">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -153,12 +215,14 @@ const Dashboard = () => {
                 <th className="text-[11px] font-bold text-gray-500 uppercase tracking-widest px-6 py-4 w-16">No</th>
                 <th className="text-[11px] font-bold text-gray-500 uppercase tracking-widest px-6 py-4 w-[280px]">No. Surat / Tanggal</th>
                 <th className="text-[11px] font-bold text-gray-500 uppercase tracking-widest px-6 py-4">Hal / Perihal</th>
-                <th className="text-[11px] font-bold text-gray-500 uppercase tracking-widest px-6 py-4 text-center">Status</th>
+                {!isDosen && (
+                  <th className="text-[11px] font-bold text-gray-500 uppercase tracking-widest px-6 py-4 text-center">Status</th>
+                )}
                 <th className="text-[11px] font-bold text-gray-500 uppercase tracking-widest px-6 py-4 text-center">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {demoAllSurat.map((surat, index) => (
+              {filteredData.map((surat, index) => (
                 <tr key={surat.id} className="hover:bg-gray-50/50 transition-colors group bg-white">
                   <td className="px-6 py-5 text-[13px] font-medium text-gray-600">{index + 1}</td>
                   <td className="px-6 py-5">
@@ -169,25 +233,39 @@ const Dashboard = () => {
                     <p className="text-[13px] font-medium text-gray-700">{surat.hal}</p>
                     <p className="text-[12px] text-gray-400 mt-1">{surat.ringkasan}</p>
                   </td>
-                  <td className="px-6 py-5 text-center">
-                    <StatusBadge status={surat.status} type={surat.statusType} />
-                  </td>
+                  {!isDosen && (
+                    <td className="px-6 py-5 text-center">
+                      <StatusBadge status={surat.status} type={surat.statusType} />
+                    </td>
+                  )}
                   <td className="px-6 py-5">
                     <div className="flex items-center justify-center gap-2">
-                      <Link
-                        to={`/surat/${surat.id}/edit-konten`}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded border border-transparent hover:border-blue-200 transition-colors"
-                        title="Edit"
-                      >
-                        <Edit className="w-[18px] h-[18px]" />
-                      </Link>
-                      <button
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded border border-transparent hover:border-red-200 transition-colors"
-                        title="Hapus"
-                        onClick={() => setDeleteConfirm(surat)}
-                      >
-                        <Trash2 className="w-[18px] h-[18px]" />
-                      </button>
+                      {isDosen && (
+                        <Link
+                          to={`/surat/${surat.id}`}
+                          className="px-4 py-2 bg-[#8B0000] text-white rounded text-sm font-semibold hover:bg-[#6B0000] transition-colors"
+                        >
+                          Lihat
+                        </Link>
+                      )}
+                      {(isAdmin || isKajur || isVerifikator) && (
+                        <Link
+                          to={`/surat/${surat.id}`}
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded border border-transparent hover:border-blue-200 transition-colors"
+                          title="Lihat"
+                        >
+                          <Edit className="w-[18px] h-[18px]" />
+                        </Link>
+                      )}
+                      {isAdmin && (
+                        <button
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded border border-transparent hover:border-red-200 transition-colors"
+                          title="Hapus"
+                          onClick={() => setDeleteConfirm(surat)}
+                        >
+                          <Trash2 className="w-[18px] h-[18px]" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -198,7 +276,7 @@ const Dashboard = () => {
 
         {/* Footer Pagination */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-white rounded-b-2xl">
-          <p className="text-[12px] text-gray-500 font-medium">Menampilkan 1 sampai 4 dari 24 data</p>
+          <p className="text-[12px] text-gray-500 font-medium">Menampilkan {filteredData.length > 0 ? '1' : '0'} sampai {filteredData.length} dari {filteredData.length} data</p>
           <div className="flex items-center gap-1">
             <button className="w-8 h-8 flex items-center justify-center border border-gray-200 rounded text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-colors">
               &lt;

@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button';
 import NomorSurat from '@/components/surat/NomorSurat';
 import SuratLogTimeline from '@/components/surat/SuratLogTimeline';
 import Breadcrumb from '@/components/layout/Breadcrumb';
+import DocumentLayout from '@/components/layout/DocumentLayout';
 import { formatTanggalFull, formatTanggalShort } from '@/utils/formatDate';
 import { formatKodeHal } from '@/constants/kodeHal';
 import { useState } from 'react';
@@ -54,6 +55,69 @@ const DetailSurat = () => {
     setShowConfirm(true);
   };
 
+  const sidebar = (
+    <div className="space-y-5">
+      <div className="rounded-[2rem] border border-gray-200 bg-white p-6 shadow-sm">
+        <h3 className="text-sm font-semibold text-gray-900 mb-4">Riwayat Status</h3>
+        <SuratLogTimeline logs={surat.logs} />
+      </div>
+
+      <div className="rounded-[2rem] border border-gray-200 bg-white p-6 shadow-sm">
+        <h3 className="text-sm font-semibold text-gray-900 mb-4">Aksi</h3>
+        <div className="space-y-3">
+          {role === 'administrator' && surat.status === 'draft' && (
+            <>
+              <Link to={`/surat/${id}/edit-konten`} className="block w-full">
+                <Button variant="primary" fullWidth icon={<Edit className="w-4 h-4" />}>Edit Konten</Button>
+              </Link>
+              <Button variant="danger" fullWidth icon={<Trash2 className="w-4 h-4" />} onClick={() => handleAction('delete')}>
+                Hapus Surat
+              </Button>
+            </>
+          )}
+
+          {role === 'administrator' && surat.status === 'ditolak' && (
+            <Button variant="primary" fullWidth icon={<Send className="w-4 h-4" />} onClick={() => handleAction('resubmit')}>
+              Revisi & Kirim Ulang
+            </Button>
+          )}
+
+          {role === 'verifikator' && surat.status === 'menunggu_verifikasi' && (
+            <>
+              <textarea
+                value={catatan}
+                onChange={(e) => setCatatan(e.target.value)}
+                placeholder="Catatan (wajib jika menolak)..."
+                className="input-field resize-none mb-2"
+                rows={3}
+              />
+              <div className="flex gap-2">
+                <Button variant="success" fullWidth icon={<CheckCircle className="w-4 h-4" />} onClick={() => handleAction('approve')}>
+                  Setujui
+                </Button>
+                <Button variant="danger" fullWidth icon={<XCircle className="w-4 h-4" />} onClick={() => handleAction('reject')}>
+                  Tolak
+                </Button>
+              </div>
+            </>
+          )}
+
+          {role === 'kajur' && surat.status === 'diverifikasi' && (
+            <Button variant="primary" fullWidth icon={<PenTool className="w-4 h-4" />} onClick={() => handleAction('sign')}>
+              Tandatangani & Terbitkan
+            </Button>
+          )}
+
+          {surat.status === 'terbit' && (
+            <Button variant="primary" fullWidth icon={<Download className="w-4 h-4" />}>
+              Download PDF
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <Breadcrumb items={[
@@ -61,170 +125,84 @@ const DetailSurat = () => {
         { label: surat.hal },
       ]} />
 
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <NomorSurat nomor={surat.nomor_surat} status={surat.status} />
-            <Badge status={surat.status} />
-          </div>
-          <h1 className="text-xl font-bold text-gray-900">{surat.hal}</h1>
-        </div>
-        <Link to="/surat" className="btn-outline text-sm">
-          <ArrowLeft className="w-4 h-4" /> Kembali
-        </Link>
-      </div>
-
-      {/* 2 column grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* LEFT — col-span-7 */}
-        <div className="lg:col-span-7 space-y-4">
-          {/* Info card */}
-          <div className="card p-5 space-y-4">
-            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-              <FileText className="w-4 h-4 text-[#8B0000]" /> Informasi Surat
-            </h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+      <DocumentLayout
+        badge="Detail Surat"
+        title={surat.hal}
+        subtitle={`No. ${surat.nomor_surat} • ${formatKodeHal(surat.kode_hal)}`}
+        headerActions={(
+          <Link
+            to="/surat"
+            className="inline-flex items-center gap-2 rounded-3xl border border-[#8B0000] px-4 py-2 text-sm font-semibold text-[#8B0000] transition-colors hover:bg-[#8B0000]/10"
+          >
+            <ArrowLeft className="w-4 h-4" /> Kembali
+          </Link>
+        )}
+        sidebar={sidebar}
+      >
+        <div className="space-y-6 text-sm text-gray-700">
+          <div className="rounded-[1.75rem] border border-gray-200 bg-[#FBFBFB] p-6">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <p className="text-gray-400 text-xs mb-0.5">Kode Hal</p>
-                <p className="font-medium">{formatKodeHal(surat.kode_hal)}</p>
+                <p className="text-gray-400 text-xs uppercase tracking-[0.2em] mb-1">Dibuat oleh</p>
+                <p className="font-medium text-gray-900">{surat.dibuat_oleh.nama_lengkap}</p>
               </div>
               <div>
-                <p className="text-gray-400 text-xs mb-0.5">Tanggal</p>
-                <p className="font-medium">{formatTanggalFull(surat.created_at)}</p>
-              </div>
-              <div>
-                <p className="text-gray-400 text-xs mb-0.5">Dibuat oleh</p>
-                <p className="font-medium">{surat.dibuat_oleh.nama_lengkap}</p>
-              </div>
-              <div>
-                <p className="text-gray-400 text-xs mb-0.5">Penanda Tangan</p>
-                <p className="font-medium">{surat.penanda_tangan.nama_lengkap}</p>
-              </div>
-              <div className="col-span-2">
-                <p className="text-gray-400 text-xs mb-0.5">Verifikator</p>
-                <p className="font-medium">{surat.verifikator.nama_lengkap}</p>
+                <p className="text-gray-400 text-xs uppercase tracking-[0.2em] mb-1">Penanda Tangan</p>
+                <p className="font-medium text-gray-900">{surat.penanda_tangan.nama_lengkap}</p>
               </div>
             </div>
           </div>
 
-          {/* Tujuan */}
-          <div className="card p-5">
-            <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <User className="w-4 h-4 text-[#8B0000]" /> Tujuan / Penerima
-            </h3>
+          <div className="rounded-[1.75rem] border border-gray-200 bg-white p-6">
+            <div className="grid gap-4 sm:grid-cols-2 text-sm">
+              <div>
+                <p className="text-gray-400 uppercase tracking-[0.2em] mb-1">Kode Hal</p>
+                <p className="font-medium text-gray-900">{formatKodeHal(surat.kode_hal)}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 uppercase tracking-[0.2em] mb-1">Tanggal</p>
+                <p className="font-medium text-gray-900">{formatTanggalFull(surat.created_at)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-[1.75rem] border border-gray-200 bg-white p-6">
+            <p className="text-gray-400 uppercase tracking-[0.2em] mb-3">Tujuan / Penerima</p>
             <div className="flex flex-wrap gap-2">
               {surat.penerima.map((p) => (
-                <span key={p.id} className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium">
+                <span key={p.id} className="rounded-full bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700">
                   {p.nama_lengkap}
                 </span>
               ))}
             </div>
           </div>
 
-          {/* Lampiran */}
-          <div className="card p-5">
-            <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <Paperclip className="w-4 h-4 text-[#8B0000]" /> Lampiran
-            </h3>
-            {surat.lampiran.length === 0 ? (
-              <p className="text-sm text-gray-400">Tidak ada lampiran</p>
-            ) : (
-              <div className="space-y-2">
-                {surat.lampiran.map((f, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-red-500" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">{f.nama}</p>
-                        <p className="text-xs text-gray-400">{f.ukuran}</p>
-                      </div>
+          <div className="rounded-[1.75rem] border border-gray-200 bg-white p-6">
+            <p className="text-gray-400 uppercase tracking-[0.2em] mb-3">Ringkasan</p>
+            <p className="leading-relaxed text-gray-700">{surat.ringkasan}</p>
+          </div>
+
+          <div className="rounded-[1.75rem] border border-gray-200 bg-white p-6">
+            <p className="text-gray-400 uppercase tracking-[0.2em] mb-3">Lampiran</p>
+            <div className="space-y-3">
+              {surat.lampiran.map((f, i) => (
+                <div key={i} className="flex items-center justify-between rounded-3xl border border-gray-200 bg-gray-50 p-4">
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-4 h-4 text-red-500" />
+                    <div>
+                      <p className="font-medium text-gray-900">{f.nama}</p>
+                      <p className="text-xs text-gray-500">{f.ukuran}</p>
                     </div>
-                    <button className="p-1.5 hover:bg-gray-200 rounded-md transition-colors">
-                      <Download className="w-4 h-4 text-gray-500" />
-                    </button>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Ringkasan */}
-          <div className="card p-5">
-            <h3 className="font-semibold text-gray-900 mb-3">Ringkasan</h3>
-            <p className="text-sm text-gray-600 leading-relaxed">{surat.ringkasan}</p>
-          </div>
-        </div>
-
-        {/* RIGHT — col-span-5 */}
-        <div className="lg:col-span-5 space-y-4">
-          {/* Timeline */}
-          <div className="card p-5">
-            <h3 className="font-semibold text-gray-900 mb-4">Riwayat Status</h3>
-            <SuratLogTimeline logs={surat.logs} />
-          </div>
-
-          {/* Actions card */}
-          <div className="card p-5">
-            <h3 className="font-semibold text-gray-900 mb-4">Aksi</h3>
-            <div className="space-y-2">
-              {/* Admin actions for draft */}
-              {role === 'administrator' && surat.status === 'draft' && (
-                <>
-                  <Link to={`/surat/${id}/edit-konten`} className="w-full">
-                    <Button variant="primary" fullWidth icon={<Edit className="w-4 h-4" />}>Edit Konten</Button>
-                  </Link>
-                  <Button variant="danger" fullWidth icon={<Trash2 className="w-4 h-4" />} onClick={() => handleAction('delete')}>
-                    Hapus Surat
-                  </Button>
-                </>
-              )}
-
-              {/* Admin actions for ditolak */}
-              {role === 'administrator' && surat.status === 'ditolak' && (
-                <Button variant="primary" fullWidth icon={<Send className="w-4 h-4" />} onClick={() => handleAction('resubmit')}>
-                  Revisi & Kirim Ulang
-                </Button>
-              )}
-
-              {/* Verifikator actions */}
-              {role === 'verifikator' && surat.status === 'menunggu_verifikasi' && (
-                <>
-                  <textarea
-                    value={catatan}
-                    onChange={(e) => setCatatan(e.target.value)}
-                    placeholder="Catatan (wajib jika menolak)..."
-                    className="input-field resize-none mb-2"
-                    rows={3}
-                  />
-                  <div className="flex gap-2">
-                    <Button variant="success" fullWidth icon={<CheckCircle className="w-4 h-4" />} onClick={() => handleAction('approve')}>
-                      Setujui
-                    </Button>
-                    <Button variant="danger" fullWidth icon={<XCircle className="w-4 h-4" />} onClick={() => handleAction('reject')}>
-                      Tolak
-                    </Button>
-                  </div>
-                </>
-              )}
-
-              {/* Kajur actions */}
-              {role === 'kajur' && surat.status === 'diverifikasi' && (
-                <Button variant="primary" fullWidth icon={<PenTool className="w-4 h-4" />} onClick={() => handleAction('sign')}>
-                  Tandatangani & Terbitkan
-                </Button>
-              )}
-
-              {/* Download for terbit */}
-              {surat.status === 'terbit' && (
-                <Button variant="primary" fullWidth icon={<Download className="w-4 h-4" />}>
-                  Download PDF
-                </Button>
-              )}
+                  <button className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-100">
+                    Download
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         </div>
-      </div>
+      </DocumentLayout>
 
       <ConfirmDialog
         isOpen={showConfirm}

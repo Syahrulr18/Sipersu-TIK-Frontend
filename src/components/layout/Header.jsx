@@ -1,6 +1,7 @@
 import useAuthStore from '@/store/authStore';
 import NotifikasiDropdown from '@/components/shared/NotifikasiDropdown';
 import { getRoleLabel } from '@/utils/roleHelper';
+import usePageTitleStore from '@/store/pageTitleStore';
 
 /**
  * Header — top bar with page context and user info (right-aligned).
@@ -10,13 +11,15 @@ import { getRoleLabel } from '@/utils/roleHelper';
  */
 const Header = ({ title }) => {
   const user = useAuthStore((s) => s.user);
+  const pageTitle = usePageTitleStore((s) => s.title);
+  const displayTitle = title || pageTitle;
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-30">
       {/* Left: Page title */}
       <div>
-        {title && (
-          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+        {displayTitle && (
+          <h1 className="text-2xl font-bold text-gray-900">{displayTitle}</h1>
         )}
       </div>
 

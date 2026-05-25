@@ -1,8 +1,6 @@
-import { useState } from 'react';
-import { PenTool } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
-import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { formatTanggalShort } from '@/utils/formatDate';
 
 const demoAntrian = [
@@ -11,8 +9,6 @@ const demoAntrian = [
 ];
 
 const TandaTangan = () => {
-  const [confirmItem, setConfirmItem] = useState(null);
-
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -43,7 +39,9 @@ const TandaTangan = () => {
                   <td className="px-4 py-4 text-sm text-gray-500">{item.verifikator}</td>
                   <td className="px-4 py-4 text-sm text-gray-500">{formatTanggalShort(item.tanggal)}</td>
                   <td className="px-4 py-4 text-center">
-                    <Button size="sm" variant="primary" onClick={() => setConfirmItem(item)}>Tanda Tangani</Button>
+                    <Link to={`/tandatangan/${item.id}`} className="inline-block">
+                      <Button size="sm" variant="primary">Lihat Persetujuan</Button>
+                    </Link>
                   </td>
                 </tr>
               ))}
@@ -51,15 +49,6 @@ const TandaTangan = () => {
           </table>
         )}
       </div>
-      <ConfirmDialog
-        isOpen={!!confirmItem}
-        onClose={() => setConfirmItem(null)}
-        onConfirm={() => setConfirmItem(null)}
-        title="Tandatangani & Terbitkan"
-        message={`Surat: "${confirmItem?.hal}". Tindakan ini tidak dapat dibatalkan.`}
-        variant="primary"
-        confirmText="Tandatangani & Terbitkan"
-      />
     </div>
   );
 };
