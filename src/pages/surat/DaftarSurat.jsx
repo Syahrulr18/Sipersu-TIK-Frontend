@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Search, Eye, Trash2, Filter } from 'lucide-react';
+import { Search, Eye, Trash2, Filter, Edit } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import useAuthStore from '@/store/authStore';
 
 // Demo data matching mockup
 const demoTerkirimSurat = [
@@ -13,6 +14,12 @@ const demoTerkirimSurat = [
 ];
 
 const DaftarSurat = () => {
+  const user = useAuthStore((s) => s.user);
+  const isDosen = user?.role === 'dosen';
+  const isAdmin = user?.role === 'administrator';
+  const isKajur = user?.role === 'kajur';
+  const isVerifikator = user?.role === 'verifikator';
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
@@ -67,21 +74,33 @@ const DaftarSurat = () => {
                       <p className="text-[12px] text-gray-400 mt-1">{surat.ringkasan}</p>
                     </td>
                     <td className="px-6 py-5">
-                      <div className="flex items-center justify-center gap-4">
-                        <Link
-                          to={`/surat/${surat.id}`}
-                          className="text-yellow-500 hover:text-yellow-600 transition-colors"
-                          title="Detail"
-                        >
-                          <Eye className="w-5 h-5" />
-                        </Link>
-                        <button
-                          className="text-[#8B0000] hover:text-red-700 transition-colors"
-                          title="Hapus"
-                          onClick={() => setDeleteConfirm(surat)}
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                      <div className="flex items-center justify-center gap-2">
+                        {isDosen && (
+                          <Link
+                            to={`/surat/${surat.id}`}
+                            className="px-4 py-2 bg-[#8B0000] text-white rounded text-sm font-semibold hover:bg-[#6B0000] transition-colors"
+                          >
+                            Lihat
+                          </Link>
+                        )}
+                        {(isAdmin || isKajur || isVerifikator) && (
+                          <>
+                            <Link
+                              to={`/surat/${surat.id}`}
+                              className="text-yellow-500 hover:text-yellow-600 transition-colors"
+                              title="Detail"
+                            >
+                              <Eye className="w-5 h-5" />
+                            </Link>
+                            <button
+                              className="text-[#8B0000] hover:text-red-700 transition-colors"
+                              title="Hapus"
+                              onClick={() => setDeleteConfirm(surat)}
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

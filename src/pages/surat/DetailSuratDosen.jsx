@@ -1,4 +1,4 @@
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import Breadcrumb from '@/components/layout/Breadcrumb';
 import useAuthStore from '@/store/authStore';
 import { formatTanggalSurat } from '@/utils/formatDate';
@@ -42,6 +42,7 @@ const demoSurat = {
 
 const DetailSuratDosen = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const role = user?.role;
 
@@ -58,13 +59,12 @@ const DetailSuratDosen = () => {
           { label: 'Daftar Surat', path: '/surat' },
           { label: 'Preview Surat' },
         ]} />
-        <Link
-          to="/surat"
-          replace
+        <button
+          onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 rounded-full border border-[#8B0000] px-4 py-2 text-sm font-semibold text-[#8B0000] transition hover:bg-[#8B0000]/10"
         >
           Kembali ke Daftar Surat
-        </Link>
+        </button>
       </div>
 
       <div
