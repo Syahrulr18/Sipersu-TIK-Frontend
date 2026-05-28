@@ -1,7 +1,11 @@
+import { useState } from 'react';
 import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
+import { Download } from 'lucide-react';
+import toast from 'react-hot-toast';
 import Breadcrumb from '@/components/layout/Breadcrumb';
 import useAuthStore from '@/store/authStore';
 import { formatTanggalSurat } from '@/utils/formatDate';
+import { downloadPdf } from '@/api/surat.api';
 
 const demoSurat = {
   id: 1,
@@ -45,12 +49,34 @@ const DetailSuratDosen = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const role = user?.role;
+  const [isDownloading, setIsDownloading] = useState(false);
 
   if (role !== 'dosen') {
     return <Navigate to={`/surat/${id}`} replace />;
   }
 
   const surat = demoSurat;
+
+  const handleDownload = async () => {
+    try {
+      setIsDownloading(true);
+      const blob = await downloadPdf(id);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Surat-${surat.nomor_surat}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Surat berhasil diunduh');
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast.error('Gagal mengunduh surat');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4">
@@ -59,12 +85,22 @@ const DetailSuratDosen = () => {
           { label: 'Daftar Surat', path: '/surat' },
           { label: 'Preview Surat' },
         ]} />
-        <button
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 rounded-full border border-[#8B0000] px-4 py-2 text-sm font-semibold text-[#8B0000] transition hover:bg-[#8B0000]/10"
-        >
-          Kembali ke Daftar Surat
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleDownload}
+            disabled={isDownloading}
+            className="inline-flex items-center gap-2 rounded-lg bg-[#8B0000] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6B0000] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download className="w-4 h-4" />
+            {isDownloading ? 'Mengunduh...' : 'Unduh PDF'}
+          </button>
+          <button
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-2 rounded-lg border border-[#8B0000] px-4 py-2 text-sm font-semibold text-[#8B0000] transition hover:bg-[#8B0000]/10"
+          >
+            Kembali
+          </button>
+        </div>
       </div>
 
       <div
