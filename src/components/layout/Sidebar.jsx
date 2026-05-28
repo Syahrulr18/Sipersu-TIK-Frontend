@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useLogout } from '@/hooks/useAuth';
 import useAuthStore from '@/store/authStore';
-import { getSidebarMenu } from '@/utils/roleHelper';
+import { getSidebarMenu, ROLES } from '@/utils/roleHelper';
 import {
   Home, Send, Bell, User, BookOpen, HelpCircle,
   ClipboardCheck, PenTool, LogOut, Mail
@@ -62,8 +62,10 @@ const Sidebar = () => {
             <ul className="space-y-0.5">
               {group.items.map((item) => {
                 const Icon = iconMap[item.icon] || Home;
+                const isDashboardLink = item.path === '/dashboard';
                 const isActive = location.pathname === item.path ||
-                  (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
+                  (item.path !== '/dashboard' && location.pathname.startsWith(item.path)) ||
+                  (isDashboardLink && role === ROLES.DOSEN && location.pathname.startsWith('/surat'));
 
                 return (
                   <li key={item.path}>

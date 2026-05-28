@@ -105,7 +105,6 @@ export const getSidebarMenu = (role) => {
     [ROLES.DOSEN]: [
       { section: 'MENU UTAMA', items: [
         { label: 'Beranda', path: '/dashboard', icon: 'Home' },
-        { label: 'Terkirim', path: '/surat', icon: 'Send' },
         { label: 'Notifikasi', path: '/notifikasi', icon: 'Bell' },
       ]},
       { section: 'PENGATURAN', items: [

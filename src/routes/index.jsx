@@ -10,7 +10,7 @@ import PublicRoute from './PublicRoute';
 import Login from '@/pages/auth/Login';
 import Dashboard from '@/pages/dashboard/Dashboard';
 import DaftarSurat from '@/pages/surat/DaftarSurat';
-import DetailSurat from '@/pages/surat/DetailSurat';
+import DetailSuratWrapper from '@/pages/surat/DetailSuratWrapper';
 import EditKonten from '@/pages/surat/EditKonten';
 import Verifikasi from '@/pages/verifikasi/Verifikasi';
 import TandaTangan from '@/pages/tandatangan/TandaTangan';
@@ -49,7 +49,7 @@ const AppRoutes = () => {
       >
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/surat" element={<DaftarSurat />} />
-        <Route path="/surat/:id" element={<DetailSurat />} />
+        <Route path="/surat/:id" element={<DetailSuratWrapper />} />
         <Route
           path="/surat/:id/edit-konten"
           element={
