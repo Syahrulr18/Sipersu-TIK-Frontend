@@ -164,7 +164,7 @@ const PersetujuanSurat = () => {
                     <table style={{ borderCollapse: 'collapse' }}>
                       <tbody>
                         {[
-                          { label: 'Nomor', value: surat.nomor_surat },
+                          { label: 'Nomor', value: surat.nomor_surat || '—' },
                           { label: 'Lampiran', value: surat.lampiran },
                           { label: 'Perihal', value: <strong>{surat.hal}</strong> },
                         ].map(({ label, value }) => (
@@ -364,7 +364,7 @@ const PersetujuanSurat = () => {
           <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm text-sm space-y-3">
             <div>
               <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">Nomor Surat</p>
-              <p className="font-medium text-gray-800">{surat.nomor_surat}</p>
+              <p className="font-medium text-gray-800">{surat.nomor_surat || '—'}</p>
             </div>
             <div>
               <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">Penanda Tangan</p>

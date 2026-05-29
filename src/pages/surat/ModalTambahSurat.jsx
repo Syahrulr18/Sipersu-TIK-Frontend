@@ -11,6 +11,7 @@ import GroupedSelect from '@/components/ui/GroupedSelect';
 import FileUpload from '@/components/ui/FileUpload';
 import SearchMultiSelect from '@/components/shared/SearchMultiSelect';
 import Button from '@/components/ui/Button';
+import { useEffect } from 'react';
 
 const suratSchema = z.object({
   penanda_tangan_id: z.string().min(1, 'Pilih penanda tangan'),
@@ -32,24 +33,33 @@ const demoVerifikator = [
 
 /**
  * ModalTambahSurat — 2-column form for creating new surat.
+ * Bisa menerima initialData dari upload Word
  */
-const ModalTambahSurat = ({ isOpen, onClose }) => {
+const ModalTambahSurat = ({ isOpen, onClose, initialData }) => {
   const [files, setFiles] = useState([]);
   const [penerima, setPenerima] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
-    register, handleSubmit, control, reset, watch,
+    register, handleSubmit, control, reset, watch, setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(suratSchema),
     defaultValues: {
       penanda_tangan_id: '', verifikator_id: '',
-      kode_hal: '', hal: '', ringkasan: '',
+      kode_hal: '', hal: initialData?.hal || '', ringkasan: initialData?.ringkasan || '',
     },
   });
 
   const halValue = watch('hal') || '';
+
+  // Auto-populate form dari data Word upload
+  useEffect(() => {
+    if (initialData && isOpen) {
+      setValue('hal', initialData.hal || '');
+      setValue('ringkasan', initialData.ringkasan || '');
+    }
+  }, [initialData, isOpen, setValue]);
 
   const handleSearchDosen = async (query) => {
     const demoResults = [
@@ -93,6 +103,17 @@ const ModalTambahSurat = ({ isOpen, onClose }) => {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Tambah Surat Baru" size="xl" footer={footer}>
+      {/* Info Box jika data dari Word */}
+      {initialData && (
+        <div className="mb-6 p-3 bg-green-50 border border-green-200 rounded-lg flex gap-2">
+          <span className="text-green-700 text-xs font-semibold flex-shrink-0 mt-0.5">✓</span>
+          <div className="text-xs text-green-700">
+            <p className="font-semibold">Data dari Upload Word</p>
+            <p className="mt-0.5">Perihal dan ringkasan sudah otomatis terisi. Silakan lengkapi field lainnya.</p>
+          </div>
+        </div>
+      )}
+
       <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* LEFT COLUMN */}
         <div className="space-y-4">

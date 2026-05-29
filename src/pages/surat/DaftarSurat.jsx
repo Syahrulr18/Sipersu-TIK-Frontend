@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Eye, Trash2, Filter, Edit } from 'lucide-react';
+import { Search, Eye, Trash2, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import useAuthStore from '@/store/authStore';
@@ -10,6 +10,7 @@ const demoTerkirimSurat = [
     id: 1, nomor_surat: 'M.002/9/KL.01.00/2026', tanggal: '25 Okt 2026',
     hal: 'Undangan Rapat Koordinasi',
     ringkasan: 'Dosen Pengajar Semester Ganjil',
+    status: 'Telah Disetujui',
   },
 ];
 
@@ -48,6 +49,8 @@ const DaftarSurat = () => {
                 className="pl-9 pr-4 py-2.5 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#8B0000] focus:border-[#8B0000] w-[260px] text-gray-600 placeholder-gray-400"
               />
             </div>
+
+
           </div>
 
           {/* Table */}
@@ -66,7 +69,7 @@ const DaftarSurat = () => {
                   <tr key={surat.id} className="hover:bg-gray-50/50 transition-colors group bg-white">
                     <td className="px-6 py-5 text-[13px] font-medium text-gray-600">{index + 1}</td>
                     <td className="px-6 py-5">
-                      <p className="font-bold text-[13px] text-gray-800 tracking-wide">{surat.nomor_surat}</p>
+                      <p className="font-bold text-[13px] text-gray-800 tracking-wide">{surat.nomor_surat || '—'}</p>
                       <p className="text-[12px] text-gray-400 mt-1 font-medium">{surat.tanggal}</p>
                     </td>
                     <td className="px-6 py-5">

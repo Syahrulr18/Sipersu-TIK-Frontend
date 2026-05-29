@@ -71,6 +71,7 @@ export const getSidebarMenu = (role) => {
         { label: 'Notifikasi', path: '/notifikasi', icon: 'Bell' },
       ]},
       { section: 'PENGATURAN', items: [
+        { label: 'Kelola User', path: '/admin/users', icon: 'User' },
         { label: 'Profil', path: '/profil', icon: 'User' },
         { label: 'Panduan', path: '/panduan', icon: 'BookOpen' },
         { label: 'Bantuan', path: '/bantuan', icon: 'HelpCircle' },

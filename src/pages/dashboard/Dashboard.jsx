@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Folder, FileEdit, FileCheck, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, Folder, FileEdit, FileCheck, Edit, Trash2, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import useAuthStore from '@/store/authStore';
 import usePageTitleStore from '@/store/pageTitleStore';
@@ -7,12 +7,13 @@ import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import ModalTambahSurat from '@/pages/surat/ModalTambahSurat';
+import ModalUploadWordSurat from '@/pages/surat/ModalUploadWordSurat';
 import { formatTanggalShort } from '@/utils/formatDate';
 
 // Demo data matching mockup
 const demoAllSurat = [
   {
-    id: 1, nomor_surat: 'M.001/9/KL.01.00/2026', tanggal: '24 Okt 2026',
+    id: 1, nomor_surat: null, tanggal: '24 Okt 2026',
     hal: 'Permohonan Izin Magang Industri',
     ringkasan: 'PT. Telkom Indonesia Tbk.',
     status: 'Menunggu Verifikasi Sekjur', statusType: 'yellow',
@@ -24,13 +25,13 @@ const demoAllSurat = [
     status: 'Telah Disetujui', statusType: 'green',
   },
   {
-    id: 3, nomor_surat: 'M.003/9/KL.01.00/2026', tanggal: '20 Okt 2026',
+    id: 3, nomor_surat: null, tanggal: '20 Okt 2026',
     hal: 'Surat Tugas Dosen Pembimbing',
     ringkasan: 'Lomba IT Nasional 2026',
     status: 'Perlu Perbaikan', statusType: 'red',
   },
   {
-    id: 4, nomor_surat: 'M.004/9/KL.01.00/2026', tanggal: '18 Okt 2026',
+    id: 4, nomor_surat: null, tanggal: '18 Okt 2026',
     hal: 'Pengajuan Alat Laboratorium',
     ringkasan: 'Lab Jaringan Komputer',
     status: 'Menunggu Persetujuan Kajur', statusType: 'orange',
@@ -50,11 +51,21 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [showModalUploadWord, setShowModalUploadWord] = useState(false);
+  const [uploadedWordData, setUploadedWordData] = useState(null);
 
   useEffect(() => {
     setPageTitle('Daftar Surat');
     return () => setPageTitle('');
   }, [setPageTitle]);
+
+  const handleUploadWord = (extractedData) => {
+    // Simpan data yang diupload dari Word
+    setUploadedWordData(extractedData);
+    // Buka modal tambah surat dengan data dari Word
+    setShowModalUploadWord(false);
+    setShowModal(true);
+  };
 
   // Tab dinamis berdasarkan role
   const getTabs = () => {
@@ -200,9 +211,19 @@ const Dashboard = () => {
               />
             </div>
             {isAdmin && (
-              <Button variant="primary" onClick={() => setShowModal(true)} icon={<Plus className="w-4 h-4" />} className="py-2.5 px-5 font-semibold shadow-sm">
-                Tambah
-              </Button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowModalUploadWord(true)}
+                  className="flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2.5 rounded-lg text-[13px] font-bold hover:bg-blue-100 transition-colors"
+                  title="Upload file Word untuk membuat surat baru"
+                >
+                  <Upload className="w-4 h-4" />
+                  Upload Word
+                </button>
+                <Button variant="primary" onClick={() => setShowModal(true)} icon={<Plus className="w-4 h-4" />} className="py-2.5 px-5 font-semibold shadow-sm">
+                  Tambah Surat
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -226,7 +247,7 @@ const Dashboard = () => {
                 <tr key={surat.id} className="hover:bg-gray-50/50 transition-colors group bg-white">
                   <td className="px-6 py-5 text-[13px] font-medium text-gray-600">{index + 1}</td>
                   <td className="px-6 py-5">
-                    <p className="font-bold text-[13px] text-gray-800 tracking-wide">{surat.nomor_surat}</p>
+                    <p className="font-bold text-[13px] text-gray-800 tracking-wide">{surat.nomor_surat || '—'}</p>
                     <p className="text-[12px] text-gray-400 mt-1 font-medium">{surat.tanggal}</p>
                   </td>
                   <td className="px-6 py-5">
@@ -288,7 +309,17 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <ModalTambahSurat isOpen={showModal} onClose={() => setShowModal(false)} />
+      {/* Modal Upload Word - hanya untuk admin */}
+      {isAdmin && (
+        <ModalUploadWordSurat
+          isOpen={showModalUploadWord}
+          onClose={() => setShowModalUploadWord(false)}
+          onUpload={handleUploadWord}
+        />
+      )}
+
+      {/* Modal Tambah Surat */}
+      <ModalTambahSurat isOpen={showModal} onClose={() => setShowModal(false)} initialData={uploadedWordData} />
 
       <ConfirmDialog
         isOpen={!!deleteConfirm}

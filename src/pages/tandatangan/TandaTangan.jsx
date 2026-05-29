@@ -4,8 +4,8 @@ import EmptyState from '@/components/ui/EmptyState';
 import { formatTanggalShort } from '@/utils/formatDate';
 
 const demoAntrian = [
-  { id: 2, nomor_surat: 'M.002/9/KL.01.00/2026', hal: 'Undangan Rapat Koordinasi', kode_hal: 'KL.01.00', verifikator: 'Dr. Ahmad Verifikator', tanggal: '2026-10-23' },
-  { id: 6, nomor_surat: 'M.006/9/AL.03/2026', hal: 'Revisi Kurikulum Prodi D4', kode_hal: 'AL.03', verifikator: 'Dr. Ahmad Verifikator', tanggal: '2026-10-22' },
+  { id: 2, nomor_surat: 'M.002/9/KL.01.00/2026', hal: 'Undangan Rapat Koordinasi', kode_hal: 'KL.01.00', verifikator: 'Dr. Ahmad Verifikator', tanggal: '2026-10-23', status: 'Telah Disetujui' },
+  { id: 6, nomor_surat: 'M.006/9/AL.03/2026', hal: 'Revisi Kurikulum Prodi D4', kode_hal: 'AL.03', verifikator: 'Dr. Ahmad Verifikator', tanggal: '2026-10-22', status: 'Telah Disetujui' },
 ];
 
 const TandaTangan = () => {
@@ -33,7 +33,7 @@ const TandaTangan = () => {
             <tbody className="divide-y divide-gray-50">
               {demoAntrian.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50/50">
-                  <td className="px-4 py-4 text-sm font-semibold text-gray-900">{item.nomor_surat}</td>
+                  <td className="px-4 py-4 text-sm font-semibold text-gray-900">{item.nomor_surat || '—'}</td>
                   <td className="px-4 py-4 text-sm text-gray-700">{item.hal}</td>
                   <td className="px-4 py-4 text-sm text-gray-500">{item.kode_hal}</td>
                   <td className="px-4 py-4 text-sm text-gray-500">{item.verifikator}</td>

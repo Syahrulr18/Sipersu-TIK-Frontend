@@ -7,10 +7,11 @@
  * @param {string} status - surat status
  */
 const NomorSurat = ({ nomor, status }) => {
-  if (!nomor || status === 'draft') {
+  // Nomor surat hanya ada jika status "Telah Disetujui"
+  if (!nomor || status !== 'Telah Disetujui') {
     return (
       <span className="text-sm text-gray-400 font-medium italic">
-        DRAFT
+        —
       </span>
     );
   }

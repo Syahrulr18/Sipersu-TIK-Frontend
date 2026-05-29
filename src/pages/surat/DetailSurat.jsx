@@ -14,10 +14,10 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 // Demo data — disesuaikan dengan isi PDF contoh
 const demoSurat = {
   id: 1,
-  nomor_surat: '0084/9.9.2/DV.00.00/2026',
+  nomor_surat: null,  // Nomor surat hanya ada setelah disetujui
   lampiran: '-',
   hal: 'Permohonan Kerja Sama',
-  status: 'menunggu_verifikasi',
+  status: 'Menunggu Verifikasi',  // Saat menunggu verifikasi, tidak ada nomor
   created_at: '2026-04-21',
   dibuat_oleh: { nama_lengkap: 'Admin Jurusan', role: 'administrator' },
   penanda_tangan: {
@@ -105,7 +105,7 @@ const DetailSurat = () => {
             <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${status.color}`}>
               {status.label}
             </span>
-            <span className="text-xs text-gray-400">No. {surat.nomor_surat}</span>
+            <span className="text-xs text-gray-400">No. {surat.nomor_surat || '—'}</span>
           </div>
 
           {/* Kertas putih — menyerupai dokumen fisik */}
