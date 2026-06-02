@@ -2,16 +2,30 @@ import { useState } from 'react';
 import { Upload, FileText, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '@/components/ui/Modal';
+import SearchSelect from '@/components/ui/SearchSelect';
 import Button from '@/components/ui/Button';
 
 /**
  * ModalUploadWordSurat — Upload file Word (.docx) dan extract data
  * Frontend only - Extract basic information dari file
  */
+// Demo dosen list (for manual tujuan selection)
+const DOSEN_LIST = [
+  { id: 10, nama_lengkap: 'Dr. Andi Pratama, M.Kom', jabatan: 'Dosen Tetap', status: 'Dosen Tetap' },
+  { id: 11, nama_lengkap: 'Ir. Fatimah Zahra, M.T.', jabatan: 'Dosen Tetap', status: 'Dosen Tetap' },
+  { id: 12, nama_lengkap: 'Muh. Rizky Aditya, S.Kom., M.Cs.', jabatan: 'Dosen Tetap', status: 'Dosen Tetap' },
+  { id: 13, nama_lengkap: 'Dr. Siti Nurhaliza, M.T.', jabatan: 'Dosen Tetap', status: 'Dosen Tetap' },
+  { id: 14, nama_lengkap: 'Ir. Budi Handoko, M.Eng.', jabatan: 'Dosen Tetap', status: 'Dosen Tetap' },
+  { id: 15, nama_lengkap: 'Prof. Ahmad Mulyanto, Ph.D.', jabatan: 'Dosen Tetap', status: 'Dosen Tetap' },
+  { id: 20, nama_lengkap: 'Bambang Suryanto, S.T.', jabatan: 'Dosen Honorer', status: 'Dosen Honorer' },
+  { id: 21, nama_lengkap: 'Dewi Lestari, S.Kom.', jabatan: 'Dosen Honorer', status: 'Dosen Honorer' },
+];
+
 const ModalUploadWordSurat = ({ isOpen, onClose, onUpload }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [filePreview, setFilePreview] = useState(null);
+  const [selectedTujuan, setSelectedTujuan] = useState(null);
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
@@ -59,6 +73,12 @@ const ModalUploadWordSurat = ({ isOpen, onClose, onUpload }) => {
 
       // Extract data dari text
       const extractedData = extractDataFromText(text);
+
+      // Override tujuan jika user sudah memilih dari dropdown
+      if (selectedTujuan) {
+        extractedData.tujuan = selectedTujuan.nama_lengkap;
+        extractedData.tujuan_dosen_id = selectedTujuan.id;
+      }
 
       // Panggil callback dengan data yang diextract
       onUpload(extractedData);
@@ -118,6 +138,7 @@ const ModalUploadWordSurat = ({ isOpen, onClose, onUpload }) => {
   const handleReset = () => {
     setSelectedFile(null);
     setFilePreview(null);
+    setSelectedTujuan(null);
   };
 
   const footer = (
@@ -190,6 +211,16 @@ const ModalUploadWordSurat = ({ isOpen, onClose, onUpload }) => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Tujuan / Kepada Selection */}
+        {filePreview && (
+          <SearchSelect
+            label="Tujuan / Kepada (Opsional)"
+            selected={selectedTujuan}
+            onChange={setSelectedTujuan}
+            placeholder="Pilih dosen penerima..."
+          />
         )}
 
         {/* Instruksi */}

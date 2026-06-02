@@ -57,11 +57,12 @@ const demoSurat = {
 
 // Badge warna per status
 const statusConfig = {
-  draft: { label: 'Draft', color: 'bg-gray-100 text-gray-600' },
-  menunggu_verifikasi: { label: 'Menunggu Verifikasi', color: 'bg-yellow-100 text-yellow-700' },
-  diverifikasi: { label: 'Diverifikasi', color: 'bg-blue-100 text-blue-700' },
-  ditolak: { label: 'Ditolak', color: 'bg-red-100 text-red-700' },
-  terbit: { label: 'Terbit', color: 'bg-green-100 text-green-700' },
+  'Draft': { label: 'Draft', color: 'bg-gray-100 text-gray-600' },
+  'Menunggu Verifikasi Sekjur': { label: 'Menunggu Verifikasi Sekjur', color: 'bg-yellow-100 text-yellow-700' },
+  'Menunggu Verifikasi': { label: 'Menunggu Verifikasi', color: 'bg-yellow-100 text-yellow-700' },
+  'Perlu Perbaikan': { label: 'Perlu Perbaikan', color: 'bg-red-100 text-red-700' },
+  'Menunggu Persetujuan Kajur': { label: 'Menunggu Persetujuan Kajur', color: 'bg-orange-100 text-orange-700' },
+  'Telah Disetujui': { label: 'Telah Disetujui', color: 'bg-green-100 text-green-700' },
 };
 
 const DetailSurat = () => {

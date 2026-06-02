@@ -6,16 +6,17 @@ import { Save, RotateCcw } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
+import SearchSelect from '@/components/ui/SearchSelect';
 import Textarea from '@/components/ui/Textarea';
 import GroupedSelect from '@/components/ui/GroupedSelect';
 import FileUpload from '@/components/ui/FileUpload';
-import SearchMultiSelect from '@/components/shared/SearchMultiSelect';
 import Button from '@/components/ui/Button';
 import { useEffect } from 'react';
 
 const suratSchema = z.object({
   penanda_tangan_id: z.string().min(1, 'Pilih penanda tangan'),
   verifikator_id: z.string().min(1, 'Pilih verifikator'),
+  tujuan_dosen_id: z.string().min(1, 'Pilih tujuan dosen'),
   kode_hal: z.string().min(1, 'Pilih kode hal'),
   hal: z.string().min(3, 'Minimal 3 karakter').max(500, 'Maksimal 500 karakter'),
   ringkasan: z.string().min(10, 'Minimal 10 karakter'),
@@ -31,13 +32,47 @@ const demoVerifikator = [
   { value: '2', label: 'Ir. Siti Rahayu, M.T. — Koordinator Prodi' },
 ];
 
+// Demo data dosen (same as SearchSelect.DOSEN_LIST for consistency)
+const demoDosen = [
+  { id: 10, nama_lengkap: 'Dr. Andi Pratama, M.Kom', jabatan: 'Dosen Tetap', status: 'Dosen Tetap' },
+  { id: 11, nama_lengkap: 'Ir. Fatimah Zahra, M.T.', jabatan: 'Dosen Tetap', status: 'Dosen Tetap' },
+  { id: 12, nama_lengkap: 'Muh. Rizky Aditya, S.Kom., M.Cs.', jabatan: 'Dosen Tetap', status: 'Dosen Tetap' },
+  { id: 13, nama_lengkap: 'Dr. Siti Nurhaliza, M.T.', jabatan: 'Dosen Tetap', status: 'Dosen Tetap' },
+  { id: 14, nama_lengkap: 'Ir. Budi Handoko, M.Eng.', jabatan: 'Dosen Tetap', status: 'Dosen Tetap' },
+  { id: 15, nama_lengkap: 'Prof. Ahmad Mulyanto, Ph.D.', jabatan: 'Dosen Tetap', status: 'Dosen Tetap' },
+  { id: 20, nama_lengkap: 'Bambang Suryanto, S.T.', jabatan: 'Dosen Honorer', status: 'Dosen Honorer' },
+  { id: 21, nama_lengkap: 'Dewi Lestari, S.Kom.', jabatan: 'Dosen Honorer', status: 'Dosen Honorer' },
+];
+
+/**
+ * Helper function: find matching dosen by tujuan text
+ * Tries to match extracted tujuan text with dosen in demoDosen list
+ */
+const findDosenByName = (tujuanText) => {
+  if (!tujuanText || typeof tujuanText !== 'string') return null;
+  
+  const searchText = tujuanText.toLowerCase().trim();
+  
+  // Exact match on full name
+  let match = demoDosen.find(d => d.nama_lengkap.toLowerCase() === searchText);
+  if (match) return match;
+  
+  // Partial match: check if any part of dosen name is in tujuan text
+  match = demoDosen.find(d => 
+    searchText.includes(d.nama_lengkap.toLowerCase()) ||
+    d.nama_lengkap.toLowerCase().includes(searchText)
+  );
+  
+  return match || null;
+};
+
 /**
  * ModalTambahSurat — 2-column form for creating new surat.
  * Bisa menerima initialData dari upload Word
  */
 const ModalTambahSurat = ({ isOpen, onClose, initialData }) => {
   const [files, setFiles] = useState([]);
-  const [penerima, setPenerima] = useState([]);
+  const [tujuanDosen, setTujuanDosen] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
@@ -46,7 +81,7 @@ const ModalTambahSurat = ({ isOpen, onClose, initialData }) => {
   } = useForm({
     resolver: zodResolver(suratSchema),
     defaultValues: {
-      penanda_tangan_id: '', verifikator_id: '',
+      penanda_tangan_id: '', verifikator_id: '', tujuan_dosen_id: '',
       kode_hal: '', hal: initialData?.hal || '', ringkasan: initialData?.ringkasan || '',
     },
   });
@@ -58,17 +93,24 @@ const ModalTambahSurat = ({ isOpen, onClose, initialData }) => {
     if (initialData && isOpen) {
       setValue('hal', initialData.hal || '');
       setValue('ringkasan', initialData.ringkasan || '');
+      
+      // Auto-populate tujuan dosen jika ada di extracted data
+      if (initialData.tujuan) {
+        const matchedDosen = findDosenByName(initialData.tujuan);
+        if (matchedDosen) {
+          setTujuanDosen(matchedDosen);
+          setValue('tujuan_dosen_id', String(matchedDosen.id));
+        }
+      }
     }
   }, [initialData, isOpen, setValue]);
 
-  const handleSearchDosen = async (query) => {
-    const demoResults = [
-      { id: 10, nama_lengkap: 'Dr. Andi Pratama, M.Kom', jabatan: 'Dosen Tetap' },
-      { id: 11, nama_lengkap: 'Ir. Fatimah Zahra, M.T.', jabatan: 'Dosen Tetap' },
-      { id: 12, nama_lengkap: 'Muh. Rizky Aditya, S.Kom., M.Cs.', jabatan: 'Dosen Tetap' },
-    ].filter((d) => d.nama_lengkap.toLowerCase().includes(query.toLowerCase()));
-    return demoResults;
-  };
+  // Update form saat tujuan dosen berubah
+  useEffect(() => {
+    if (tujuanDosen?.id) {
+      setValue('tujuan_dosen_id', String(tujuanDosen.id));
+    }
+  }, [tujuanDosen, setValue]);
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);
@@ -82,7 +124,7 @@ const ModalTambahSurat = ({ isOpen, onClose, initialData }) => {
   const handleReset = () => {
     reset();
     setFiles([]);
-    setPenerima([]);
+    setTujuanDosen(null);
   };
 
   const footer = (
@@ -109,7 +151,9 @@ const ModalTambahSurat = ({ isOpen, onClose, initialData }) => {
           <span className="text-green-700 text-xs font-semibold flex-shrink-0 mt-0.5">✓</span>
           <div className="text-xs text-green-700">
             <p className="font-semibold">Data dari Upload Word</p>
-            <p className="mt-0.5">Perihal dan ringkasan sudah otomatis terisi. Silakan lengkapi field lainnya.</p>
+            <p className="mt-0.5">
+              Perihal, ringkasan, dan tujuan sudah otomatis terisi. {!tujuanDosen && 'Silakan lengkapi field yang masih kosong.'}
+            </p>
           </div>
         </div>
       )}
@@ -131,12 +175,18 @@ const ModalTambahSurat = ({ isOpen, onClose, initialData }) => {
             error={errors.verifikator_id?.message}
             {...register('verifikator_id')}
           />
-          <SearchMultiSelect
-            label="Tujuan / Kepada"
-            selected={penerima}
-            onChange={setPenerima}
-            onSearch={handleSearchDosen}
-            placeholder="Cari Dosen..."
+          <Controller
+            name="tujuan_dosen_id"
+            control={control}
+            render={() => (
+              <SearchSelect
+                label="Tujuan / Kepada"
+                selected={tujuanDosen}
+                onChange={setTujuanDosen}
+                error={errors.tujuan_dosen_id?.message}
+                placeholder="Cari Dosen..."
+              />
+            )}
           />
           <Controller
             name="kode_hal"

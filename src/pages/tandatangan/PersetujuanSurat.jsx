@@ -13,10 +13,11 @@ import { formatTanggalSurat } from '@/utils/formatDate';
 
 const demoSurat = {
   id: 2,
-  nomor_surat: 'M.002/9/KL.01.00/2026',
+  nomor_surat: null,  // Nomor surat diberikan SETELAH Kajur setuju
   lampiran: '1 berkas',
   hal: 'Undangan Rapat Koordinasi',
   kode_hal: 'KL.01.00',
+  status: 'Menunggu Persetujuan Kajur',  // Belum disetujui Kajur
   created_at: '2026-02-02',
   tujuan: [
     'Kepada Yth.',
@@ -164,7 +165,7 @@ const PersetujuanSurat = () => {
                     <table style={{ borderCollapse: 'collapse' }}>
                       <tbody>
                         {[
-                          { label: 'Nomor', value: surat.nomor_surat || '—' },
+                          { label: 'Nomor', value: surat.nomor_surat || '(Akan digenerate setelah persetujuan)' },
                           { label: 'Lampiran', value: surat.lampiran },
                           { label: 'Perihal', value: <strong>{surat.hal}</strong> },
                         ].map(({ label, value }) => (
@@ -363,8 +364,8 @@ const PersetujuanSurat = () => {
           {/* Info surat */}
           <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm text-sm space-y-3">
             <div>
-              <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">Nomor Surat</p>
-              <p className="font-medium text-gray-800">{surat.nomor_surat || '—'}</p>
+              <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">Nomor Surat (Diberikan setelah persetujuan)</p>
+              <p className="font-medium text-gray-800 text-lg">{surat.nomor_surat ? surat.nomor_surat : <span className="text-gray-400 italic">Akan digenerate setelah persetujuan</span>}</p>
             </div>
             <div>
               <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">Penanda Tangan</p>

@@ -18,6 +18,7 @@ import PersetujuanSurat from '@/pages/tandatangan/PersetujuanSurat';
 import Notifikasi from '@/pages/notifikasi/Notifikasi';
 import ManajemenUser from '@/pages/admin/ManajemenUser';
 import Profil from '@/pages/profil/Profil';
+import PanduanBantuan from '@/pages/panduan/PanduanBantuan';
 
 /**
  * AppRoutes — defines all application routes.
@@ -92,6 +93,7 @@ const AppRoutes = () => {
           }
         />
         <Route path="/profil" element={<Profil />} />
+        <Route path="/panduan" element={<PanduanBantuan />} />
       </Route>
 
       {/* Fallback */}

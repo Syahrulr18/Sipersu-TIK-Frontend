@@ -9,9 +9,9 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { formatTanggalShort } from '@/utils/formatDate';
 
 const demoAntrian = [
-  { id: 1, nomor_surat: 'M.001/9/KL.01.00/2026', hal: 'Permohonan Izin Magang Industri', kode_hal: 'KL.01.00', dari: 'Admin Jurusan', tanggal_masuk: '2026-10-24' },
-  { id: 4, nomor_surat: 'M.004/9/KL.01.00/2026', hal: 'Pengajuan Alat Laboratorium', kode_hal: 'KL.01.00', dari: 'Admin Jurusan', tanggal_masuk: '2026-10-18' },
-  { id: 5, nomor_surat: 'M.005/9/AL.02/2026', hal: 'Laporan Akademik Semester Ganjil', kode_hal: 'AL.02', dari: 'Admin Jurusan', tanggal_masuk: '2026-10-15' },
+  { id: 1, nomor_surat: null, hal: 'Permohonan Izin Magang Industri', kode_hal: 'KL.01.00', dari: 'Admin Jurusan', tanggal_masuk: '2026-10-24', status: 'Menunggu Verifikasi' },
+  { id: 4, nomor_surat: null, hal: 'Pengajuan Alat Laboratorium', kode_hal: 'KL.01.00', dari: 'Admin Jurusan', tanggal_masuk: '2026-10-18', status: 'Menunggu Verifikasi' },
+  { id: 5, nomor_surat: null, hal: 'Laporan Akademik Semester Ganjil', kode_hal: 'AL.02', dari: 'Admin Jurusan', tanggal_masuk: '2026-10-15', status: 'Menunggu Verifikasi' },
 ];
 
 const Verifikasi = () => {
@@ -56,7 +56,7 @@ const Verifikasi = () => {
             <tbody className="divide-y divide-gray-50">
               {demoAntrian.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-4 py-4 text-sm font-semibold text-gray-900">{item.nomor_surat}</td>
+                  <td className="px-4 py-4 text-sm font-semibold text-gray-900">{item.nomor_surat || '—'}</td>
                   <td className="px-4 py-4 text-sm text-gray-700">{item.hal}</td>
                   <td className="px-4 py-4 text-sm text-gray-500">{item.kode_hal}</td>
                   <td className="px-4 py-4 text-sm text-gray-500">{item.dari}</td>

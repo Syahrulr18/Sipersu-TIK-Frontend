@@ -73,8 +73,7 @@ export const getSidebarMenu = (role) => {
       { section: 'PENGATURAN', items: [
         { label: 'Kelola User', path: '/admin/users', icon: 'User' },
         { label: 'Profil', path: '/profil', icon: 'User' },
-        { label: 'Panduan', path: '/panduan', icon: 'BookOpen' },
-        { label: 'Bantuan', path: '/bantuan', icon: 'HelpCircle' },
+        { label: 'Panduan & Bantuan', path: '/panduan', icon: 'HelpCircle' },
       ]},
     ],
     [ROLES.VERIFIKATOR]: [
@@ -86,8 +85,7 @@ export const getSidebarMenu = (role) => {
       ]},
       { section: 'PENGATURAN', items: [
         { label: 'Profil', path: '/profil', icon: 'User' },
-        { label: 'Panduan', path: '/panduan', icon: 'BookOpen' },
-        { label: 'Bantuan', path: '/bantuan', icon: 'HelpCircle' },
+        { label: 'Panduan & Bantuan', path: '/panduan', icon: 'HelpCircle' },
       ]},
     ],
     [ROLES.KAJUR]: [
@@ -99,8 +97,7 @@ export const getSidebarMenu = (role) => {
       ]},
       { section: 'PENGATURAN', items: [
         { label: 'Profil', path: '/profil', icon: 'User' },
-        { label: 'Panduan', path: '/panduan', icon: 'BookOpen' },
-        { label: 'Bantuan', path: '/bantuan', icon: 'HelpCircle' },
+        { label: 'Panduan & Bantuan', path: '/panduan', icon: 'HelpCircle' },
       ]},
     ],
     [ROLES.DOSEN]: [
@@ -110,8 +107,7 @@ export const getSidebarMenu = (role) => {
       ]},
       { section: 'PENGATURAN', items: [
         { label: 'Profil', path: '/profil', icon: 'User' },
-        { label: 'Panduan', path: '/panduan', icon: 'BookOpen' },
-        { label: 'Bantuan', path: '/bantuan', icon: 'HelpCircle' },
+        { label: 'Panduan & Bantuan', path: '/panduan', icon: 'HelpCircle' },
       ]},
     ],
   };

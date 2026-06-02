@@ -12,6 +12,7 @@ const demoSurat = {
   nomor_surat: '0084/9.9.2/DV.00.00/2026',
   lampiran: '-',
   hal: 'Permohonan Kerja Sama',
+  status: 'Telah Disetujui',  // Dosen hanya melihat surat yang sudah disetujui
   created_at: '2026-04-21',
   tujuan: [
     'Kepada Yth.',
