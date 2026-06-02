@@ -96,14 +96,14 @@ const ModalUploadWordSurat = ({ isOpen, onClose, onUpload }) => {
   const extractDataFromText = (text) => {
     // Extract informasi dari text dokumen Word
     // Ini adalah contoh parsing sederhana
-    
+
     const lines = text.split('\n').filter(l => l.trim());
-    
+
     // Cari perihal/hal (biasanya setelah kata "Perihal:" atau "Hal:")
     let hal = '';
     let ringkasan = '';
     let tujuan = '';
-    
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].toLowerCase();
       if (line.includes('perihal:') || line.includes('hal:')) {
@@ -214,14 +214,12 @@ const ModalUploadWordSurat = ({ isOpen, onClose, onUpload }) => {
         )}
 
         {/* Tujuan / Kepada Selection */}
-        {filePreview && (
-          <SearchSelect
-            label="Tujuan / Kepada (Opsional)"
-            selected={selectedTujuan}
-            onChange={setSelectedTujuan}
-            placeholder="Pilih dosen penerima..."
-          />
-        )}
+        <SearchSelect
+          label="Tujuan / Kepada"
+          selected={selectedTujuan}
+          onChange={setSelectedTujuan}
+          placeholder="Pilih dosen penerima..."
+        />
 
         {/* Instruksi */}
         <div className="p-3 bg-gray-50 rounded-lg text-xs text-gray-600 space-y-1">
