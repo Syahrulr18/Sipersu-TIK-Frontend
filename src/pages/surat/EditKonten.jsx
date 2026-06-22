@@ -177,8 +177,7 @@ const EditKonten = () => {
     }
 
     return `<div style="font-family:'Times New Roman',serif;font-size:12pt;line-height:1.5">
-${ringkasanHtml}  <br>
-  <p style="text-align:justify;text-indent:36pt">Demikian disampaikan, atas perhatiannya diucapkan terima kasih.</p>
+${ringkasanHtml}
 </div>`;
   };
 
@@ -274,7 +273,8 @@ ${ringkasanHtml}  <br>
   const handleTabClick = (idx) => {
     setSelectedIdx(idx);
     if (editor && kontenStateRef.current[idx]) {
-      editor.commands.setContent(kontenStateRef.current[idx].konten_html);
+      // Set emitUpdate = false agar tidak mentrigger onUpdate secara otomatis
+      editor.commands.setContent(kontenStateRef.current[idx].konten_html, false);
     }
   };
 
@@ -301,7 +301,18 @@ ${ringkasanHtml}  <br>
 
   const handlePreviewSurat = () => {
     // Pastikan konten HTML tersimpan dulu sebelum berpindah
-    updateKonten.mutate({ konten_html: editor.getHTML() }, {
+    let payload = {};
+    const dataArray = kontenStateRef.current;
+    if (dataArray.length > 1 && dataArray[0]?.penerima_id !== null) {
+        payload.konten_penerima = dataArray.map(item => ({
+            penerima_id: item.penerima_id,
+            konten_html: item.konten_html
+        }));
+    } else {
+        payload.konten_html = dataArray[0]?.konten_html || '';
+    }
+
+    updateKonten.mutate(payload, {
       onSuccess: () => {
         navigate(`/surat/${id}`);
       },
