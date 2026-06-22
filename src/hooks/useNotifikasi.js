@@ -50,3 +50,31 @@ export const useBacaSemua = () => {
     },
   });
 };
+
+/**
+ * Hook to delete single notification.
+ */
+export const useDeleteNotifikasi = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: notifApi.deleteNotifikasi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifikasi'] });
+    },
+  });
+};
+
+/**
+ * Hook to delete all notifications.
+ */
+export const useHapusSemuaNotifikasi = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: notifApi.hapusSemua,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifikasi'] });
+    },
+  });
+};

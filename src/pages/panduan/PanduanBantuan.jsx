@@ -18,8 +18,8 @@ const PanduanBantuan = () => {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h4 className="font-semibold text-blue-900 mb-2">Tentang Sipersu-TIK</h4>
             <p className="text-sm text-blue-800">
-              Sipersu-TIK adalah sistem persuratan digital untuk Jurusan Teknik Informatika dan Komputer, 
-              Politeknik Negeri Ujung Pandang (PNUP). Aplikasi ini memudahkan proses pembuatan, verifikasi, 
+              Sipersu-TIK adalah sistem persuratan digital untuk Jurusan Teknik Informatika dan Komputer,
+              Politeknik Negeri Ujung Pandang (PNUP). Aplikasi ini memudahkan proses pembuatan, verifikasi,
               dan persetujuan surat secara digital.
             </p>
           </div>
@@ -229,7 +229,7 @@ const PanduanBantuan = () => {
             </ol>
             <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-3">
               <p className="text-xs text-blue-800">
-                <strong>💡 Tips:</strong> Untuk hasil terbaik, pastikan file Word Anda memiliki 
+                <strong>💡 Tips:</strong> Untuk hasil terbaik, pastikan file Word Anda memiliki
                 format "Perihal: [Judul]" di bagian awal dokumen.
               </p>
             </div>
@@ -287,7 +287,7 @@ const PanduanBantuan = () => {
           <div className="bg-gray-50 p-4 rounded-lg">
             <h5 className="font-semibold text-gray-900 mb-2">❓ Berapa lama waktu verifikasi surat?</h5>
             <p className="text-sm text-gray-700">
-              Waktu verifikasi tergantung dari Sekretaris Jurusan. Biasanya 1-2 hari kerja. 
+              Waktu verifikasi tergantung dari Sekretaris Jurusan. Biasanya 1-2 hari kerja.
               Anda akan mendapat notifikasi saat surat disetujui atau perlu revisi.
             </p>
           </div>
@@ -295,8 +295,8 @@ const PanduanBantuan = () => {
           <div className="bg-gray-50 p-4 rounded-lg">
             <h5 className="font-semibold text-gray-900 mb-2">❓ Bagaimana jika surat ditolak verifikator?</h5>
             <p className="text-sm text-gray-700">
-              Surat akan dikembalikan ke Admin dengan catatan perbaikan. 
-              Buka surat di "Daftar Surat", lihat catatan di bagian timeline, 
+              Surat akan dikembalikan ke Admin dengan catatan perbaikan.
+              Buka surat di "Daftar Surat", lihat catatan di bagian timeline,
               edit surat, kemudian submit ulang untuk verifikasi.
             </p>
           </div>
@@ -304,8 +304,8 @@ const PanduanBantuan = () => {
           <div className="bg-gray-50 p-4 rounded-lg">
             <h5 className="font-semibold text-gray-900 mb-2">❓ Bagaimana cara edit surat yang sudah dibuat?</h5>
             <p className="text-sm text-gray-700">
-              Buka "Daftar Surat", cari surat yang ingin diedit, klik ikon mata/detail, 
-              kemudian klik tombol "Edit" di bagian kanan. Hanya surat dengan status "Draft" 
+              Buka "Daftar Surat", cari surat yang ingin diedit, klik ikon mata/detail,
+              kemudian klik tombol "Edit" di bagian kanan. Hanya surat dengan status "Draft"
               atau "Perlu Perbaikan" yang bisa diedit.
             </p>
           </div>
@@ -313,7 +313,7 @@ const PanduanBantuan = () => {
           <div className="bg-gray-50 p-4 rounded-lg">
             <h5 className="font-semibold text-gray-900 mb-2">❓ Kapan surat mendapat nomor resmi?</h5>
             <p className="text-sm text-gray-700">
-              Nomor surat digenerate otomatis <strong>setelah Kajur memberikan persetujuan dan tanda tangan</strong>. 
+              Nomor surat digenerate otomatis <strong>setelah Kajur memberikan persetujuan dan tanda tangan</strong>.
               Nomor akan langsung muncul di halaman surat detail dengan format: M.001/9/KL.01.00/2026
             </p>
           </div>
@@ -321,7 +321,7 @@ const PanduanBantuan = () => {
           <div className="bg-gray-50 p-4 rounded-lg">
             <h5 className="font-semibold text-gray-900 mb-2">❓ Apakah bisa download surat sebagai PDF?</h5>
             <p className="text-sm text-gray-700">
-              Ya, setelah surat terbit (sudah disetujui Kajur), Anda bisa membuka detail surat 
+              Ya, setelah surat terbit (sudah disetujui Kajur), Anda bisa membuka detail surat
               dan klik tombol "Download PDF" untuk mendownload surat dalam format PDF.
             </p>
           </div>
@@ -329,7 +329,7 @@ const PanduanBantuan = () => {
           <div className="bg-gray-50 p-4 rounded-lg">
             <h5 className="font-semibold text-gray-900 mb-2">❓ Bagaimana jika lupa password?</h5>
             <p className="text-sm text-gray-700">
-              Hubungi Administrator Sistem atau klik link "Lupa Password?" di halaman login. 
+              Hubungi Administrator Sistem atau klik link "Lupa Password?" di halaman login.
               Anda akan diminta untuk verifikasi email terdaftar dan membuat password baru.
             </p>
           </div>
@@ -337,7 +337,7 @@ const PanduanBantuan = () => {
           <div className="bg-gray-50 p-4 rounded-lg">
             <h5 className="font-semibold text-gray-900 mb-2">❓ Berapa ukuran maksimal file yang bisa diupload?</h5>
             <p className="text-sm text-gray-700">
-              Untuk file Word (.docx): maksimal 5MB. Untuk lampiran surat: maksimal 10MB per file. 
+              Untuk file Word (.docx): maksimal 5MB. Untuk lampiran surat: maksimal 10MB per file.
               Total lampiran dalam satu surat maksimal 50MB.
             </p>
           </div>
@@ -345,7 +345,7 @@ const PanduanBantuan = () => {
           <div className="bg-gray-50 p-4 rounded-lg">
             <h5 className="font-semibold text-gray-900 mb-2">❓ Berapa karakter maksimal untuk perihal surat?</h5>
             <p className="text-sm text-gray-700">
-              Perihal surat maksimal 255 karakter. Sistem akan memberitahu jika Anda melebihi batas. 
+              Perihal surat maksimal 255 karakter. Sistem akan memberitahu jika Anda melebihi batas.
               Pastikan perihal singkat dan jelas menggambarkan isi surat.
             </p>
           </div>
@@ -410,74 +410,6 @@ const PanduanBantuan = () => {
         </div>
       ),
     },
-    {
-      id: 'contact',
-      title: 'Hubungi Support',
-      icon: MessageSquare,
-      content: (
-        <div className="space-y-4">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <h4 className="font-semibold text-green-900 mb-3">Hubungi Tim Support</h4>
-            <div className="space-y-3">
-              <div>
-                <p className="text-sm font-semibold text-gray-700">Email Support</p>
-                <p className="text-sm text-gray-600">
-                  <a href="mailto:support@pnup.ac.id" className="text-[#8B0000] hover:underline">
-                    support@pnup.ac.id
-                  </a>
-                </p>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-700">WhatsApp</p>
-                <p className="text-sm text-gray-600">
-                  <a href="https://wa.me/6285123456789" className="text-[#8B0000] hover:underline">
-                    +62 851-2345-6789
-                  </a>
-                </p>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-700">Telepon</p>
-                <p className="text-sm text-gray-600">(0411) 585-9911</p>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-700">Jam Kerja</p>
-                <p className="text-sm text-gray-600">Senin - Jumat, 08:00 - 16:00 WITA</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-semibold text-blue-900 mb-3">Info Teknis</h4>
-            <div className="space-y-2 text-sm text-gray-700">
-              <p><strong>Browser yang Disupport:</strong></p>
-              <ul className="ml-4 space-y-1">
-                <li>• Chrome 90+</li>
-                <li>• Firefox 88+</li>
-                <li>• Safari 14+</li>
-                <li>• Edge 90+</li>
-              </ul>
-              <p className="mt-3"><strong>Kompatibilitas Mobile:</strong> Responsif untuk smartphone dan tablet</p>
-              <p><strong>RAM Minimum:</strong> 2GB</p>
-              <p><strong>Kecepatan Internet:</strong> 1Mbps (stabil)</p>
-            </div>
-          </div>
-
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <h4 className="font-semibold text-yellow-900 mb-2">⚠️ Laporkan Bug</h4>
-            <p className="text-sm text-gray-700">
-              Jika Anda menemukan bug atau error, mohon segera laporkan melalui email support 
-              dengan menyertakan:
-            </p>
-            <ul className="ml-4 space-y-1 text-sm text-gray-700 mt-2">
-              <li>• Deskripsi lengkap masalah</li>
-              <li>• Screenshot atau video demonstrasi</li>
-              <li>• Browser yang digunakan</li>
-              <li>• Waktu kejadian bug</li>
-            </ul>
-          </div>
-        </div>
-      ),
-    },
   ];
 
   return (
@@ -490,7 +422,7 @@ const PanduanBantuan = () => {
             <h1 className="text-3xl font-bold text-gray-900">Panduan & Bantuan</h1>
           </div>
           <p className="text-gray-600">
-            Temukan jawaban atas pertanyaan Anda tentang cara menggunakan Sipersu-TIK. 
+            Temukan jawaban atas pertanyaan Anda tentang cara menggunakan Sipersu-TIK.
             Pilih topik di bawah untuk mempelajari lebih lanjut.
           </p>
         </div>
@@ -513,9 +445,8 @@ const PanduanBantuan = () => {
                     <h2 className="text-lg font-semibold text-gray-900">{section.title}</h2>
                   </div>
                   <ChevronDown
-                    className={`w-5 h-5 text-gray-400 transition-transform ${
-                      isExpanded ? 'transform rotate-180' : ''
-                    }`}
+                    className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'transform rotate-180' : ''
+                      }`}
                   />
                 </button>
 
@@ -528,21 +459,6 @@ const PanduanBantuan = () => {
               </div>
             );
           })}
-        </div>
-
-        {/* Footer */}
-        <div className="mt-8 bg-gradient-to-r from-[#8B0000] to-red-700 rounded-lg p-6 text-white">
-          <h3 className="text-lg font-semibold mb-2">Masih Butuh Bantuan?</h3>
-          <p className="text-red-50 mb-4">
-            Jika Anda tidak menemukan jawaban yang Anda cari, jangan ragu untuk menghubungi 
-            tim support kami. Kami siap membantu Anda 24/7.
-          </p>
-          <a
-            href="mailto:support@pnup.ac.id"
-            className="inline-block bg-white text-[#8B0000] font-semibold px-6 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            Hubungi Support
-          </a>
         </div>
       </div>
     </div>

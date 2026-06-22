@@ -40,7 +40,9 @@ api.interceptors.response.use(
     switch (status) {
       case 401:
         useAuthStore.getState().logout();
-        window.location.href = '/login';
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
         break;
 
       case 422:

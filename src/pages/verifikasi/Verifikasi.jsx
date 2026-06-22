@@ -1,45 +1,61 @@
 import { useState } from 'react';
-import { ClipboardCheck, Eye, CheckCircle, XCircle } from 'lucide-react';
-import Badge from '@/components/ui/Badge';
+import { ClipboardCheck, Eye, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import Button from '@/components/ui/Button';
-import Pagination from '@/components/ui/Pagination';
 import EmptyState from '@/components/ui/EmptyState';
-import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
-import { formatTanggalShort } from '@/utils/formatDate';
-
-const demoAntrian = [
-  { id: 1, nomor_surat: null, hal: 'Permohonan Izin Magang Industri', kode_hal: 'KL.01.00', dari: 'Admin Jurusan', tanggal_masuk: '2026-10-24', status: 'Menunggu Verifikasi' },
-  { id: 4, nomor_surat: null, hal: 'Pengajuan Alat Laboratorium', kode_hal: 'KL.01.00', dari: 'Admin Jurusan', tanggal_masuk: '2026-10-18', status: 'Menunggu Verifikasi' },
-  { id: 5, nomor_surat: null, hal: 'Laporan Akademik Semester Ganjil', kode_hal: 'AL.02', dari: 'Admin Jurusan', tanggal_masuk: '2026-10-15', status: 'Menunggu Verifikasi' },
-];
+import Modal from '@/components/ui/Modal';
+import Skeleton from '@/components/ui/Skeleton';
+import { useAntrianVerifikasi, useVerifikasiSurat } from '@/hooks/useSurat';
 
 const Verifikasi = () => {
   const [reviewModal, setReviewModal] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
   const [catatan, setCatatan] = useState('');
 
+  const { data, isLoading } = useAntrianVerifikasi();
+  const antrian = data?.data || [];
+
+  const verifikasiMutation = useVerifikasiSurat(reviewModal?.id);
+
   const handleAction = (action) => {
+    if (action === 'reject' && !catatan.trim()) {
+      setCatatan('');
+    }
     setConfirmAction(action);
   };
 
   const handleConfirm = () => {
-    setConfirmAction(null);
-    setReviewModal(null);
-    setCatatan('');
+    const aksi = confirmAction === 'approve' ? 'setuju' : 'tolak';
+    verifikasiMutation.mutate(
+      { aksi, catatan },
+      {
+        onSuccess: () => {
+          setConfirmAction(null);
+          setReviewModal(null);
+          setCatatan('');
+        },
+      }
+    );
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <h1 className="page-title">Antrian Verifikasi</h1>
-        <span className="bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
-          {demoAntrian.length}
-        </span>
+        {!isLoading && (
+          <span className="bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+            {antrian.length}
+          </span>
+        )}
       </div>
 
       <div className="card overflow-hidden">
-        {demoAntrian.length === 0 ? (
+        {isLoading ? (
+          <div className="p-4 space-y-3">
+            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
+          </div>
+        ) : antrian.length === 0 ? (
           <EmptyState title="Tidak ada antrian" description="Semua surat sudah diverifikasi." />
         ) : (
           <table className="w-full">
@@ -48,19 +64,19 @@ const Verifikasi = () => {
                 <th className="text-left text-xs font-semibold text-gray-500 uppercase px-4 py-3">No. Surat</th>
                 <th className="text-left text-xs font-semibold text-gray-500 uppercase px-4 py-3">Hal</th>
                 <th className="text-left text-xs font-semibold text-gray-500 uppercase px-4 py-3">Kode Hal</th>
-                <th className="text-left text-xs font-semibold text-gray-500 uppercase px-4 py-3">Dari</th>
+                <th className="text-left text-xs font-semibold text-gray-500 uppercase px-4 py-3">Dibuat Oleh</th>
                 <th className="text-left text-xs font-semibold text-gray-500 uppercase px-4 py-3">Tgl Masuk</th>
                 <th className="text-center text-xs font-semibold text-gray-500 uppercase px-4 py-3">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {demoAntrian.map((item) => (
+              {antrian.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-4 py-4 text-sm font-semibold text-gray-900">{item.nomor_surat || '—'}</td>
                   <td className="px-4 py-4 text-sm text-gray-700">{item.hal}</td>
-                  <td className="px-4 py-4 text-sm text-gray-500">{item.kode_hal}</td>
-                  <td className="px-4 py-4 text-sm text-gray-500">{item.dari}</td>
-                  <td className="px-4 py-4 text-sm text-gray-500">{formatTanggalShort(item.tanggal_masuk)}</td>
+                  <td className="px-4 py-4 text-sm text-gray-500">{item.kode_hal?.kode || '—'}</td>
+                  <td className="px-4 py-4 text-sm text-gray-500">{item.dibuat_oleh?.nama_lengkap || '—'}</td>
+                  <td className="px-4 py-4 text-sm text-gray-500">{item.created_at}</td>
                   <td className="px-4 py-4 text-center">
                     <Button size="sm" variant="primary" onClick={() => setReviewModal(item)}>
                       Review
@@ -81,10 +97,18 @@ const Verifikasi = () => {
         size="md"
         footer={
           <div className="flex gap-3 justify-end">
-            <Button variant="success" icon={<CheckCircle className="w-4 h-4" />} onClick={() => handleAction('approve')}>
+            <Button
+              variant="success"
+              icon={<CheckCircle className="w-4 h-4" />}
+              onClick={() => handleAction('approve')}
+            >
               Setujui
             </Button>
-            <Button variant="danger" icon={<XCircle className="w-4 h-4" />} onClick={() => handleAction('reject')}>
+            <Button
+              variant="danger"
+              icon={<XCircle className="w-4 h-4" />}
+              onClick={() => handleAction('reject')}
+            >
               Tolak
             </Button>
           </div>
@@ -95,22 +119,24 @@ const Verifikasi = () => {
             <div className="bg-gray-50 rounded-lg p-4 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Nomor</span>
-                <span className="font-semibold">{reviewModal.nomor_surat}</span>
+                <span className="font-semibold">{reviewModal.nomor_surat || '(belum terbit)'}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Perihal</span>
-                <span className="font-medium">{reviewModal.hal}</span>
+                <span className="font-medium text-right max-w-xs">{reviewModal.hal}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Dari</span>
-                <span>{reviewModal.dari}</span>
+                <span className="text-gray-500">Dibuat Oleh</span>
+                <span>{reviewModal.dibuat_oleh?.nama_lengkap || '—'}</span>
               </div>
             </div>
-            <Button variant="outline" fullWidth icon={<Eye className="w-4 h-4" />}>
-              Lihat Surat (Preview PDF)
-            </Button>
+            <Link to={`/surat/${reviewModal.id}`}>
+              <Button variant="outline" fullWidth icon={<Eye className="w-4 h-4" />}>
+                Lihat Detail Surat
+              </Button>
+            </Link>
             <div>
-              <label className="label-field">Catatan</label>
+              <label className="label-field">Catatan {confirmAction === 'reject' && <span className="text-red-500">*</span>}</label>
               <textarea
                 value={catatan}
                 onChange={(e) => setCatatan(e.target.value)}
@@ -128,9 +154,14 @@ const Verifikasi = () => {
         onClose={() => setConfirmAction(null)}
         onConfirm={handleConfirm}
         title={confirmAction === 'approve' ? 'Setujui Surat' : 'Tolak Surat'}
-        message={confirmAction === 'approve' ? 'Surat akan diteruskan ke penanda tangan.' : 'Surat akan dikembalikan ke pembuat.'}
+        message={
+          confirmAction === 'approve'
+            ? 'Surat akan diteruskan ke penanda tangan.'
+            : 'Surat akan dikembalikan ke pembuat dengan catatan.'
+        }
         variant={confirmAction === 'approve' ? 'success' : 'danger'}
         confirmText={confirmAction === 'approve' ? 'Ya, Setujui' : 'Ya, Tolak'}
+        loading={verifikasiMutation.isPending}
       />
     </div>
   );

@@ -11,3 +11,9 @@ export const bacaNotifikasi = (id) => api.patch(`/notifikasi/${id}/baca`);
 
 /** PATCH /notifikasi/baca-semua — Mark all as read */
 export const bacaSemua = () => api.patch('/notifikasi/baca-semua');
+
+/** DELETE /notifikasi/:id — Delete single notification */
+export const deleteNotifikasi = (id) => api.delete(`/notifikasi/${id}`);
+
+/** DELETE /notifikasi/hapus-semua — Delete all notifications */
+export const hapusSemua = () => api.delete('/notifikasi/hapus-semua');

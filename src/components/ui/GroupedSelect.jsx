@@ -1,16 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { Search, ChevronDown, X } from 'lucide-react';
-import { KODE_HAL_LIST, getGroupedKodeHal } from '@/constants/kodeHal';
+import { Search, ChevronDown, X, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { getKodeHal } from '@/api/master.api';
 
 /**
- * GroupedSelect — searchable dropdown with grouped options for Kode Hal.
- * Features: search filter, group by kategori, keyboard navigation.
- * 
- * @param {string} label
- * @param {string} value
- * @param {function} onChange
- * @param {string} error
- * @param {string} placeholder
+ * GroupedSelect — searchable dropdown fetching Kode Hal from API.
+ * Groups by kategori, supports search filter.
  */
 const GroupedSelect = ({
   label,
@@ -23,6 +18,18 @@ const GroupedSelect = ({
   const [search, setSearch] = useState('');
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Fetch kode hal from API
+  const { data, isLoading } = useQuery({
+    queryKey: ['kode-hal'],
+    queryFn: () => getKodeHal().then((r) => r.data?.data || []),
+    staleTime: 5 * 60 * 1000, // cache 5 menit
+  });
+
+  // Flatten grouped API data to flat list
+  const flatList = (data || []).flatMap((group) =>
+    (group.items || []).map((item) => ({ ...item, kategori: group.kategori }))
+  );
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -37,12 +44,12 @@ const GroupedSelect = ({
 
   // Filter by search term
   const filteredList = search
-    ? KODE_HAL_LIST.filter(
+    ? flatList.filter(
         (item) =>
           item.kode.toLowerCase().includes(search.toLowerCase()) ||
           item.nama.toLowerCase().includes(search.toLowerCase())
       )
-    : KODE_HAL_LIST;
+    : flatList;
 
   // Group filtered list
   const grouped = filteredList.reduce((acc, item) => {
@@ -52,7 +59,7 @@ const GroupedSelect = ({
   }, {});
 
   // Get selected display value
-  const selectedItem = KODE_HAL_LIST.find((k) => k.kode === value);
+  const selectedItem = flatList.find((k) => k.kode === value);
   const displayValue = selectedItem
     ? `${selectedItem.kode} — ${selectedItem.nama}`
     : '';
@@ -124,7 +131,12 @@ const GroupedSelect = ({
 
           {/* Options list */}
           <div className="max-h-64 overflow-y-auto py-1">
-            {Object.keys(grouped).length === 0 ? (
+            {isLoading ? (
+              <div className="flex items-center justify-center gap-2 py-4 text-sm text-gray-500">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Memuat kode hal...
+              </div>
+            ) : Object.keys(grouped).length === 0 ? (
               <div className="px-4 py-3 text-sm text-gray-500 text-center">
                 Tidak ditemukan
               </div>

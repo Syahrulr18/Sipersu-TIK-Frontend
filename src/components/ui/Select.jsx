@@ -21,7 +21,7 @@ const Select = forwardRef(({
   const selectId = id || props.name;
 
   return (
-    <div className="w-full">
+    <div className={`w-full ${className}`}>
       {label && (
         <label htmlFor={selectId} className="label-field">
           {label}

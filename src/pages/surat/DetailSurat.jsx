@@ -1,115 +1,163 @@
-import { useParams, Link } from 'react-router-dom';
+import { useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Download, Edit, Trash2, Send,
-  CheckCircle, XCircle, PenTool, FileText, ArrowLeft
+  CheckCircle, XCircle, PenTool, ArrowLeft, Loader2
 } from 'lucide-react';
 import useAuthStore from '@/store/authStore';
 import Button from '@/components/ui/Button';
 import SuratLogTimeline from '@/components/surat/SuratLogTimeline';
 import Breadcrumb from '@/components/layout/Breadcrumb';
-import { formatTanggalSurat } from '@/utils/formatDate';
-import { useState } from 'react';
+import Skeleton from '@/components/ui/Skeleton';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import SignModal from '@/components/surat/SignModal';
+import { useSuratDetail, useVerifikasiSurat, useTandatanganSurat, useDeleteSurat, useSubmitSurat } from '@/hooks/useSurat';
+import { downloadPdf } from '@/api/surat.api';
+import toast from 'react-hot-toast';
 
-// Demo data — disesuaikan dengan isi PDF contoh
-const demoSurat = {
-  id: 1,
-  nomor_surat: null,  // Nomor surat hanya ada setelah disetujui
-  lampiran: '-',
-  hal: 'Permohonan Kerja Sama',
-  status: 'Menunggu Verifikasi',  // Saat menunggu verifikasi, tidak ada nomor
-  created_at: '2026-04-21',
-  dibuat_oleh: { nama_lengkap: 'Admin Jurusan', role: 'administrator' },
-  penanda_tangan: {
-    nama_lengkap: 'Nurul Khaerani Hamzidah, S.T., M.T.',
-    nip: '19890814 201903 2 020',
-    jabatan: 'Koordinator Program Studi\nTeknik Multimedia dan Jaringan,',
-  },
-  tujuan: [
-    'Kepada Yth.',
-    'Pimpinan',
-    'Lembaga Layanan Psikologi Psikomorfosa',
-    'Di -',
-    'Tempat',
-  ],
-  salam_pembuka: 'Assalamu\'alaikum Warahmatullahi Wabarakatuh.',
-  konten: [
-    'Puji dan syukur kita panjatkan kehadirat Allah Subhaanahu Wa Ta\'ala yang telah melimpahkan rahmat-Nya kepada kita semua, sehingga kita masih diberi kesehatan dan perlindungan-Nya.',
-    'Sehubungan dengan pemenuhan tugas project pada mata kuliah Pemrograman Web di Program Studi Teknik Multimedia dan Jaringan, Politeknik Negeri Ujung Pandang, kami bermaksud untuk menjalin kerja sama dengan Lembaga Layanan Psikologi Psikomorfosa. Project yang kami laksanakan berjudul "Website Tes Psikologi PAPI Kostick", yang bertujuan untuk mengembangkan sistem berbasis web guna mendukung pelaksanaan tes psikologi secara digital, khususnya dalam hal pengelolaan peserta, pelaksanaan tes, serta pengolahan data secara terstruktur dan efisien.',
-    'Melalui surat ini, kami memohon kesediaan Bapak/Ibu kiranya dapat memberikan izin kepada kami untuk melakukan kerja sama dalam bentuk:',
-  ],
-  poin_kerja_sama: [
-    'Wawancara narasumber',
-    'Pengambilan data dan observasi terkait project',
-    'Validasi konten psikologi pada website yang dibuat',
-  ],
-  jadwal: {
-    waktu: 'Selasa, 19 Mei 2026',
-    lokasi: 'Kantor Lembaga Layanan Psikologi Psikomorfosa Makassar',
-  },
-  penutup: 'Besar harapan kami agar permohonan ini dapat diterima, sehingga project mata kuliah ini dapat memberikan manfaat yang nyata bagi dunia pendidikan maupun praktisi psikologi. Demikian surat ini kami sampaikan, atas perhatian dan kerjasamanya kami ucapkan terima kasih.',
-  salam_penutup: 'Wassalamu\'alaikum Warahmatullahi Wabarakatuh.',
-  logs: [
-    { status: 'draft', user_name: 'Admin Jurusan', tanggal: '2026-04-21T08:00:00', catatan: null },
-    { status: 'menunggu_verifikasi', user_name: 'Admin Jurusan', tanggal: '2026-04-21T10:30:00', catatan: 'Dikirim untuk verifikasi' },
-  ],
-};
-
-// Badge warna per status
-const statusConfig = {
-  'Draft': { label: 'Draft', color: 'bg-gray-100 text-gray-600' },
-  'Menunggu Verifikasi Sekjur': { label: 'Menunggu Verifikasi Sekjur', color: 'bg-yellow-100 text-yellow-700' },
-  'Menunggu Verifikasi': { label: 'Menunggu Verifikasi', color: 'bg-yellow-100 text-yellow-700' },
-  'Perlu Perbaikan': { label: 'Perlu Perbaikan', color: 'bg-red-100 text-red-700' },
-  'Menunggu Persetujuan Kajur': { label: 'Menunggu Persetujuan Kajur', color: 'bg-orange-100 text-orange-700' },
-  'Telah Disetujui': { label: 'Telah Disetujui', color: 'bg-green-100 text-green-700' },
+// Badge per status backend
+const STATUS_CONFIG = {
+  draft:               { label: 'Draft',                color: 'bg-gray-100 text-gray-600' },
+  menunggu_verifikasi: { label: 'Menunggu Verifikasi',  color: 'bg-yellow-100 text-yellow-700' },
+  diverifikasi:        { label: 'Diverifikasi',          color: 'bg-blue-100 text-blue-700' },
+  ditolak:             { label: 'Perlu Perbaikan',       color: 'bg-red-100 text-red-700' },
+  terbit:              { label: 'Terbit',                color: 'bg-green-100 text-green-700' },
 };
 
 const DetailSurat = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const role = user?.role;
-  const surat = demoSurat;
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [confirmAction, setConfirmAction] = useState(null);
-  const [catatan, setCatatan] = useState('');
 
-  const handleAction = (action) => {
-    setConfirmAction(action);
-    setShowConfirm(true);
+  const [catatan, setCatatan] = useState('');
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [selectedPenerimaIdx, setSelectedPenerimaIdx] = useState(0);
+
+  // Fetch surat detail dari API
+  const { data, isLoading, isError } = useSuratDetail(id);
+  const surat = data?.data;
+
+  // Mutations
+  const verifikasiMutation = useVerifikasiSurat(id);
+  const ttdMutation        = useTandatanganSurat(id);
+  const deleteMutation     = useDeleteSurat(id);
+  const submitMutation     = useSubmitSurat(id);
+
+  const handleConfirm = () => {
+    if (confirmAction === 'approve') {
+      verifikasiMutation.mutate(
+        { aksi: 'setuju', catatan },
+        { onSuccess: () => setConfirmAction(null), onError: () => setConfirmAction(null) }
+      );
+    } else if (confirmAction === 'reject') {
+      verifikasiMutation.mutate(
+        { aksi: 'tolak', catatan },
+        { onSuccess: () => setConfirmAction(null), onError: () => setConfirmAction(null) }
+      );
+    } else if (confirmAction === 'sign') {
+      ttdMutation.mutate(undefined, { onSuccess: () => setConfirmAction(null), onError: () => setConfirmAction(null) });
+    } else if (confirmAction === 'rejectKajur') {
+      ttdMutation.mutate(
+        { aksi: 'tolak', catatan },
+        { onSuccess: () => setConfirmAction(null), onError: () => setConfirmAction(null) }
+      );
+    } else if (confirmAction === 'delete') {
+      deleteMutation.mutate(id, { onSuccess: () => navigate('/dashboard'), onError: () => setConfirmAction(null) });
+    } else if (confirmAction === 'resubmit') {
+      submitMutation.mutate(undefined, { onSuccess: () => setConfirmAction(null), onError: () => setConfirmAction(null) });
+    }
   };
 
-  const status = statusConfig[surat.status] ?? { label: surat.status, color: 'bg-gray-100 text-gray-600' };
+  const handleDownloadPdf = async () => {
+    try {
+      const activePenerimaId = (role !== 'dosen' && surat.penerima?.length > 1) 
+        ? surat.penerima[selectedPenerimaIdx]?.id 
+        : null;
+        
+      const res = await downloadPdf(id, activePenerimaId);
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `surat-${surat.nomor_surat?.replace(/\//g, '-') || id}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Gagal mengunduh PDF');
+    }
+  };
+
+  const isMutating = verifikasiMutation.isPending || ttdMutation.isPending ||
+                     deleteMutation.isPending || submitMutation.isPending;
+
+  if (isLoading) {
+    return (
+      <div className="max-w-5xl mx-auto py-8 space-y-4">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-[600px] w-full" />
+      </div>
+    );
+  }
+
+  if (isError || !surat) {
+    return (
+      <div className="max-w-5xl mx-auto py-8 text-center text-gray-500">
+        <p>Surat tidak ditemukan.</p>
+        <Link to="/dashboard" className="text-[#8B0000] text-sm mt-2 inline-block">← Kembali ke Beranda</Link>
+      </div>
+    );
+  }
+
+  const statusCfg = STATUS_CONFIG[surat.status] ?? { label: surat.status, color: 'bg-gray-100 text-gray-600' };
 
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4">
-      {/* Breadcrumb & tombol kembali */}
-      <div className="max-w-5xl mx-auto mb-6 flex items-center justify-between">
+      {/* Breadcrumb */}
+      <div className="max-w-7xl mx-auto mb-6 flex items-center justify-between">
         <Breadcrumb items={[
-          { label: 'Daftar Surat', path: '/surat' },
+          { label: 'Beranda', path: '/dashboard' },
           { label: surat.hal },
         ]} />
-        <Link
-          to="/surat"
-          className="inline-flex items-center gap-2 rounded-full border border-[#8B0000] px-4 py-2 text-sm font-semibold text-[#8B0000] transition hover:bg-[#8B0000]/10"
-        >
-          <ArrowLeft className="w-4 h-4" /> Kembali
-        </Link>
       </div>
 
-      <div className="max-w-5xl mx-auto flex flex-col lg:flex-row gap-6 items-start">
+      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6 items-start">
 
         {/* ── KOLOM KIRI: Kertas Surat ── */}
         <div className="flex-1">
-          {/* Status badge */}
           <div className="mb-3 flex items-center gap-3">
-            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${status.color}`}>
-              {status.label}
+            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${statusCfg.color}`}>
+              {statusCfg.label}
             </span>
-            <span className="text-xs text-gray-400">No. {surat.nomor_surat || '—'}</span>
+            <span className="text-xs text-gray-400">
+              {surat.nomor_surat ? `No. ${surat.nomor_surat}` : 'Nomor surat belum terbit'}
+            </span>
           </div>
 
-          {/* Kertas putih — menyerupai dokumen fisik */}
+          {/* ── TAB PENERIMA (hanya jika > 1 penerima dan bukan dosen) ── */}
+          {role !== 'dosen' && surat.penerima?.length > 1 && (
+            <div className="flex gap-0 mb-0 overflow-x-auto">
+              {surat.penerima.map((p, idx) => (
+                <button
+                  key={p.id || idx}
+                  onClick={() => setSelectedPenerimaIdx(idx)}
+                  title={p.nama_lengkap}
+                  className={`px-5 py-2.5 text-sm font-medium transition-all duration-200 border-b-2 whitespace-nowrap ${
+                    selectedPenerimaIdx === idx
+                      ? 'bg-white text-[#8B0000] border-[#8B0000] shadow-sm'
+                      : 'bg-gray-50 text-gray-500 border-transparent hover:bg-gray-100 hover:text-gray-700'
+                  }`}
+                  style={{
+                    borderTopLeftRadius: idx === 0 ? '8px' : '0',
+                    borderTopRightRadius: idx === surat.penerima.length - 1 ? '8px' : '0',
+                  }}
+                >
+                  Tab {idx + 1}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Kertas putih — dokumen resmi */}
           <div
             className="bg-white shadow-xl"
             style={{
@@ -117,39 +165,33 @@ const DetailSurat = () => {
               fontSize: '12pt',
               lineHeight: '1.5',
               color: '#000',
-              padding: '48px 64px',
-              maxWidth: '794px',   /* A4 lebar */
+              padding: '96px',
+              maxWidth: '900px',
               width: '100%',
             }}
           >
             {/* ── KOP SURAT ── */}
-            <div style={{ borderBottom: '3px solid #000', paddingBottom: '10px', marginBottom: '16px' }}>
+            <div style={{ borderBottom: '4px solid #000', paddingBottom: '10px', marginBottom: '30px', marginTop: '-38px' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
                   <tr>
-                    <td style={{ width: '80px', verticalAlign: 'middle' }}>
-                      {/* Logo placeholder — ganti dengan <img src="..." /> jika tersedia */}
-                      <img 
-                          src="/logo_PNUP.png" 
-                          alt="Logo PNUP" 
-                          style={{ width: '72px', height: '72px', objectFit: 'contain' }} 
-                        />
+                    <td style={{ width: '95px', verticalAlign: 'middle' }}>
+                      <img
+                        src="/logo_PNUP.png"
+                        alt="Logo PNUP"
+                        style={{ width: '95px', height: 'auto', objectFit: 'contain' }}
+                      />
                     </td>
-                    <td style={{ textAlign: 'center', verticalAlign: 'middle', paddingLeft: '8px' }}>
-                      <div style={{ fontSize: '11pt', fontWeight: 'normal', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                        Kementerian Pendidikan Tinggi,
+                    <td style={{ textAlign: 'center', verticalAlign: 'middle', paddingLeft: '8px', lineHeight: 1 }}>
+                      <div style={{ fontSize: '15pt', textTransform: 'uppercase' }}>
+                        Kementerian Pendidikan Tinggi,<br />Sains, dan Teknologi
                       </div>
-                      <div style={{ fontSize: '11pt', fontWeight: 'normal', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                        Sains, dan Teknologi
-                      </div>
-                      <div style={{ fontSize: '14pt', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      <div style={{ fontSize: '16pt', fontWeight: 'bold', textTransform: 'uppercase' }}>
                         Politeknik Negeri Ujung Pandang
                       </div>
-                      <div style={{ fontSize: '9pt', marginTop: '2px' }}>
-                        Direktorat Kampus Tamalanrea, Jl. P. Kemerdekaan Km. 10, Makassar 90245
-                      </div>
-                      <div style={{ fontSize: '9pt' }}>
-                        E-mail: pnup@poliupg.ac.id &nbsp; Laman www.poliupg.ac.id
+                      <div style={{ fontSize: '10pt', marginTop: '2px' }}>
+                        Direktorat Kampus Tamalanrea, Jl. P. Kemerdekaan Km. 10, Makassar 90245<br />
+                        E-mail: pnup@poliupg.ac.id Laman www.poliupg.ac.id
                       </div>
                     </td>
                   </tr>
@@ -157,182 +199,217 @@ const DetailSurat = () => {
               </table>
             </div>
 
-            {/* ── NOMOR / LAMPIRAN / PERIHAL + TANGGAL ── */}
+            {/* ── IDENTITAS SURAT ── */}
             <table style={{ width: '100%', marginBottom: '24px', marginTop: '12px' }}>
               <tbody>
                 <tr>
                   <td style={{ verticalAlign: 'top', width: '60%' }}>
                     <table style={{ borderCollapse: 'collapse' }}>
                       <tbody>
-                        {[
-                          { label: 'Nomor', value: surat.nomor_surat },
-                          { label: 'Lampiran', value: surat.lampiran },
-                          { label: 'Perihal', value: <strong>{surat.hal}</strong> },
-                        ].map(({ label, value }) => (
-                          <tr key={label}>
-                            <td style={{ paddingRight: '6px', paddingBottom: '2px', whiteSpace: 'nowrap' }}>{label}</td>
-                            <td style={{ paddingRight: '8px', paddingBottom: '2px' }}>:</td>
-                            <td style={{ paddingBottom: '2px' }}>{value}</td>
-                          </tr>
-                        ))}
+                        <tr>
+                          <td style={{ paddingRight: '6px', paddingBottom: '2px', whiteSpace: 'nowrap' }}>Nomor</td>
+                          <td style={{ paddingRight: '8px', paddingBottom: '2px' }}>:</td>
+                          <td style={{ paddingBottom: '2px' }}>{surat.nomor_surat || '—'}</td>
+                        </tr>
+                        <tr>
+                          <td style={{ paddingRight: '6px', paddingBottom: '2px', whiteSpace: 'nowrap' }}>Lampiran</td>
+                          <td style={{ paddingRight: '8px', paddingBottom: '2px' }}>:</td>
+                          <td style={{ paddingBottom: '2px' }}>
+                            {surat.lampiran?.length > 0
+                              ? surat.lampiran.reduce((sum, l) => sum + (l.jumlah_halaman || 1), 0) + ' Lembar'
+                              : '-'}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style={{ paddingRight: '6px', paddingBottom: '2px', whiteSpace: 'nowrap' }}>Perihal</td>
+                          <td style={{ paddingRight: '8px', paddingBottom: '2px' }}>:</td>
+                          <td style={{ paddingBottom: '2px' }}><strong>{surat.hal}</strong></td>
+                        </tr>
                       </tbody>
                     </table>
                   </td>
                   <td style={{ textAlign: 'right', verticalAlign: 'top' }}>
-                    {formatTanggalSurat(surat.created_at)}
+                    Makassar, {surat.tanggal_terbit || surat.created_at_date}
                   </td>
                 </tr>
               </tbody>
             </table>
 
-            {/* ── TUJUAN ── */}
+            {/* ── PENERIMA ── */}
             <div style={{ marginBottom: '20px' }}>
-              {surat.tujuan.map((line, i) => (
-                <div key={i} style={{ paddingLeft: i >= 3 ? '16px' : '0' }}>
-                  {i === 2 ? <strong>{line}</strong> : line}
-                </div>
-              ))}
+              <div>Kepada Yth.</div>
+              {role !== 'dosen' && surat.penerima?.length > 1 ? (
+                /* Jika multi-penerima dan bukan dosen, tampilkan hanya penerima yang dipilih di tab */
+                <>
+                  <div style={{ paddingLeft: '16px' }}>
+                    {surat.penerima[selectedPenerimaIdx]?.nama_lengkap}
+                  </div>
+                </>
+              ) : (
+                /* Jika penerima tunggal atau dosen, tampilkan semua */
+                (surat.penerima || []).map((p, i) => (
+                  <div key={p.id || i} style={{ paddingLeft: '16px' }}>{p.nama_lengkap}</div>
+                ))
+              )}
+              <div style={{ paddingLeft: '16px' }}>Di - Tempat</div>
             </div>
 
-            {/* ── SALAM PEMBUKA ── */}
-            <div style={{ fontStyle: 'italic', fontWeight: 'bold', marginBottom: '12px' }}>
-              {surat.salam_pembuka}
-            </div>
+            {/* ── KONTEN SURAT HTML ── */}
+            <div
+              className="preview-content"
+              style={{ textAlign: 'justify', minHeight: '200px' }}
+              dangerouslySetInnerHTML={{ 
+                __html: (role !== 'dosen' && surat.penerima?.length > 1) 
+                  ? (surat.penerima[selectedPenerimaIdx]?.konten_html || surat.konten_html || '<p><em>(Konten surat belum diisi)</em></p>')
+                  : (surat.konten_html || '<p><em>(Konten surat belum diisi)</em></p>')
+              }}
+            />
 
-            {/* ── ISI SURAT ── */}
-            <div style={{ textAlign: 'justify' }}>
-              {surat.konten.map((par, idx) => (
-                <p key={idx} style={{ textIndent: '2.5em', marginBottom: '10px', marginTop: 0 }}>
-                  {par}
-                </p>
-              ))}
-
-              {/* Poin-poin kerja sama */}
-              <ol style={{ marginLeft: '2.5em', marginBottom: '12px', marginTop: 0, paddingLeft: '1em' }}>
-                {surat.poin_kerja_sama.map((poin, i) => (
-                  <li key={i} style={{ marginBottom: '4px' }}>
-                    <strong>{poin}</strong>
-                  </li>
-                ))}
-              </ol>
-
-              {/* Jadwal */}
-              <p style={{ marginBottom: '10px', marginTop: 0 }}>
-                Kegiatan ini rencananya akan dilaksanakan pada:
-              </p>
-              <table style={{ marginLeft: '2.5em', marginBottom: '16px', borderCollapse: 'collapse' }}>
-                <tbody>
-                  <tr>
-                    <td style={{ paddingRight: '8px', paddingBottom: '4px', whiteSpace: 'nowrap', fontWeight: 'bold' }}>Waktu Pelaksanaan</td>
-                    <td style={{ paddingRight: '8px', paddingBottom: '4px', fontWeight: 'bold' }}>:</td>
-                    <td style={{ paddingBottom: '4px', fontWeight: 'bold' }}>{surat.jadwal.waktu}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ paddingRight: '8px', fontWeight: 'bold' }}>Lokasi</td>
-                    <td style={{ paddingRight: '8px', fontWeight: 'bold' }}>:</td>
-                    <td style={{ fontWeight: 'bold' }}>{surat.jadwal.lokasi}</td>
-                  </tr>
-                </tbody>
-              </table>
-
-              {/* Penutup */}
-              <p style={{ marginBottom: '8px', marginTop: 0 }}>{surat.penutup}</p>
-
-              {/* Salam penutup */}
-              <p style={{ fontStyle: 'italic', fontWeight: 'bold', marginBottom: '32px', marginTop: 0 }}>
-                {surat.salam_penutup}
-              </p>
-            </div>
+            {/* ── CATATAN PENOLAKAN ── */}
+            {surat.catatan_penolakan && (
+              <div style={{ marginTop: '16px', padding: '12px', background: '#FEF2F2', borderLeft: '4px solid #EF4444', borderRadius: '4px' }}>
+                <p style={{ fontWeight: 'bold', fontSize: '10pt', color: '#991B1B' }}>Catatan Penolakan:</p>
+                <p style={{ fontSize: '10pt', color: '#991B1B' }}>{surat.catatan_penolakan}</p>
+              </div>
+            )}
 
             {/* ── TANDA TANGAN ── */}
-            <table style={{ width: '100%' }}>
+            <table style={{ width: '100%', marginTop: '40px' }}>
               <tbody>
                 <tr>
-                  <td style={{ width: '50%' }} />
-                  <td style={{ textAlign: 'center' }}>
-                    {surat.penanda_tangan.jabatan.split('\n').map((line, i) => (
-                      <div key={i}>{line}</div>
-                    ))}
-                    {/* Ruang tanda tangan */}
-                    <div style={{ height: '64px' }} />
-                    <div style={{ borderBottom: '1px solid #000', display: 'inline-block', minWidth: '200px' }}>
-                      <strong><u>{surat.penanda_tangan.nama_lengkap}</u></strong>
-                    </div>
-                    <br />
-                    <span>NIP {surat.penanda_tangan.nip}</span>
+                  <td style={{ width: '60%' }} />
+                  <td style={{ textAlign: 'left', verticalAlign: 'top' }}>
+                    <strong>
+                      <div>Ketua Jurusan</div>
+                      <div>Teknik Informatika dan Komputer</div>
+                    </strong>
+                    {(surat.status === 'terbit' && surat.penanda_tangan?.ttd_url) ? (
+                      <div style={{ margin: '8px 0' }}>
+                        <img 
+                          src={surat.penanda_tangan.ttd_url} 
+                          alt="Tanda Tangan" 
+                          style={{ maxHeight: '80px', objectFit: 'contain' }} 
+                        />
+                      </div>
+                    ) : (
+                      <div style={{ height: '64px' }} />
+                    )}
+                    <strong>
+                      <u>{surat.penanda_tangan?.nama_lengkap}</u>
+                      <br />
+                      NIP. {surat.penanda_tangan?.nip}
+                    </strong>
                   </td>
                 </tr>
               </tbody>
             </table>
+
+            {/* ── LAMPIRAN LIST ── */}
+            {surat.lampiran?.length > 0 && (
+              <div style={{ marginTop: '32px', borderTop: '1px solid #ddd', paddingTop: '16px' }}>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '10pt' }}>Lampiran:</p>
+                <ol style={{ margin: 0, paddingLeft: '1.5em', fontSize: '10pt' }}>
+                  {surat.lampiran.map((l) => (
+                    <li key={l.id} style={{ marginBottom: '4px' }}>
+                      {l.nama_file_asli}{' '}
+                      <span style={{ color: '#888' }}>({l.ukuran})</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
           </div>
-          {/* Akhir kertas */}
         </div>
 
-        {/* ── KOLOM KANAN: Sidebar Aksi & Riwayat ── */}
+        {/* ── KOLOM KANAN: Sidebar ── */}
         <div className="w-full lg:w-72 space-y-5 shrink-0">
 
           {/* Aksi */}
           <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
             <h3 className="text-sm font-semibold text-gray-900 mb-4">Aksi</h3>
             <div className="space-y-3">
-              {role === 'administrator' && surat.status === 'draft' && (
+              {role === 'administrator' && (
                 <>
-                  <Link to={`/surat/${id}/edit-konten`} className="block w-full">
-                    <Button variant="primary" fullWidth icon={<Edit className="w-4 h-4" />}>Edit Konten</Button>
+                  <Link to={surat.status === 'draft' || surat.status === 'ditolak' ? `/surat/${id}/edit-konten` : '#'} 
+                    className={`block w-full ${!(surat.status === 'draft' || surat.status === 'ditolak') ? 'pointer-events-none opacity-50' : ''}`}>
+                    <Button variant="primary" fullWidth icon={<Edit className="w-4 h-4" />} disabled={!(surat.status === 'draft' || surat.status === 'ditolak')}>
+                      {surat.status === 'ditolak' ? 'Perbaiki Konten' : 'Edit Konten'}
+                    </Button>
                   </Link>
-                  <Button variant="danger" fullWidth icon={<Trash2 className="w-4 h-4" />} onClick={() => handleAction('delete')}>
+                  <Button variant="outline" fullWidth icon={<Send className="w-4 h-4" />}
+                    onClick={() => setConfirmAction('resubmit')}
+                    disabled={!(surat.status === 'draft' || surat.status === 'ditolak')}>
+                    {surat.status === 'ditolak' ? 'Kirim Ulang' : 'Submit ke Verifikator'}
+                  </Button>
+                  <Button variant="danger" fullWidth icon={<Trash2 className="w-4 h-4" />}
+                    onClick={() => setConfirmAction('delete')}
+                    disabled={!(surat.status === 'draft' || surat.status === 'ditolak')}>
                     Hapus Surat
                   </Button>
                 </>
               )}
 
-              {role === 'administrator' && surat.status === 'ditolak' && (
-                <Button variant="primary" fullWidth icon={<Send className="w-4 h-4" />} onClick={() => handleAction('resubmit')}>
-                  Revisi & Kirim Ulang
-                </Button>
-              )}
-
-              {role === 'verifikator' && surat.status === 'menunggu_verifikasi' && (
+              {role === 'verifikator' && (
                 <>
                   <textarea
                     value={catatan}
                     onChange={(e) => setCatatan(e.target.value)}
                     placeholder="Catatan (wajib jika menolak)..."
-                    className="w-full rounded-xl border border-gray-200 p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#8B0000]/30"
+                    className="w-full rounded-xl border border-gray-200 p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#8B0000]/30 disabled:bg-gray-50 disabled:opacity-50"
                     rows={3}
+                    disabled={surat.status !== 'menunggu_verifikasi'}
                   />
-                  <div className="flex gap-2">
-                    <Button variant="success" fullWidth icon={<CheckCircle className="w-4 h-4" />} onClick={() => handleAction('approve')}>
+                  <div className="flex gap-2 mt-2">
+                    <Button variant="success" fullWidth icon={<CheckCircle className="w-4 h-4" />}
+                      onClick={() => setConfirmAction('approve')}
+                      disabled={surat.status !== 'menunggu_verifikasi'}>
                       Setujui
                     </Button>
-                    <Button variant="danger" fullWidth icon={<XCircle className="w-4 h-4" />} onClick={() => handleAction('reject')}>
+                    <Button variant="danger" fullWidth icon={<XCircle className="w-4 h-4" />}
+                      onClick={() => {
+                        if (!catatan.trim()) { toast.error('Catatan wajib diisi jika menolak surat'); return; }
+                        setConfirmAction('reject');
+                      }}
+                      disabled={surat.status !== 'menunggu_verifikasi'}>
                       Tolak
                     </Button>
                   </div>
                 </>
               )}
 
-              {role === 'kajur' && surat.status === 'diverifikasi' && (
-                <Button variant="primary" fullWidth icon={<PenTool className="w-4 h-4" />} onClick={() => handleAction('sign')}>
-                  Tandatangani & Terbitkan
-                </Button>
+              {role === 'kajur' && (
+                <>
+                  <textarea
+                    value={catatan}
+                    onChange={(e) => setCatatan(e.target.value)}
+                    placeholder="Catatan (wajib jika menolak)..."
+                    className="w-full rounded-xl border border-gray-200 p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#8B0000]/30 disabled:bg-gray-50 disabled:opacity-50"
+                    rows={3}
+                    disabled={surat.status !== 'diverifikasi'}
+                  />
+                  <div className="flex flex-col gap-2 mt-2">
+                    <Button variant="primary" fullWidth icon={<PenTool className="w-4 h-4" />}
+                      onClick={() => setConfirmAction('sign')}
+                      disabled={surat.status !== 'diverifikasi'}>
+                      Tandatangani & Terbitkan
+                    </Button>
+                    <Button variant="danger" fullWidth icon={<XCircle className="w-4 h-4" />}
+                      onClick={() => {
+                        if (!catatan.trim()) { toast.error('Catatan wajib diisi jika menolak surat'); return; }
+                        setConfirmAction('rejectKajur');
+                      }}
+                      disabled={surat.status !== 'diverifikasi'}>
+                      Tolak
+                    </Button>
+                  </div>
+                </>
               )}
 
-              {surat.status === 'terbit' && (
-                <Button variant="primary" fullWidth icon={<Download className="w-4 h-4" />}>
-                  Download PDF
-                </Button>
-              )}
-
-              {/* Jika tidak ada aksi yang tersedia */}
-              {!(
-                (role === 'administrator' && ['draft', 'ditolak'].includes(surat.status)) ||
-                (role === 'verifikator' && surat.status === 'menunggu_verifikasi') ||
-                (role === 'kajur' && surat.status === 'diverifikasi') ||
-                surat.status === 'terbit'
-              ) && (
-                <p className="text-xs text-gray-400 text-center py-2">Tidak ada aksi tersedia</p>
-              )}
+              <Button variant="primary" fullWidth icon={<Download className="w-4 h-4" />}
+                onClick={handleDownloadPdf}
+                disabled={surat.status !== 'terbit'}>
+                Download PDF
+              </Button>
             </div>
           </div>
 
@@ -340,39 +417,65 @@ const DetailSurat = () => {
           <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm text-sm space-y-3">
             <div>
               <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">Dibuat oleh</p>
-              <p className="font-medium text-gray-800">{surat.dibuat_oleh.nama_lengkap}</p>
+              <p className="font-medium text-gray-800">{surat.dibuat_oleh?.nama_lengkap}</p>
             </div>
+            {surat.verifikator && (
+              <div>
+                <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">Verifikator</p>
+                <p className="font-medium text-gray-800">{surat.verifikator.nama_lengkap}</p>
+              </div>
+            )}
             <div>
               <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">Penanda Tangan</p>
-              <p className="font-medium text-gray-800">{surat.penanda_tangan.nama_lengkap}</p>
+              <p className="font-medium text-gray-800">{surat.penanda_tangan?.nama_lengkap}</p>
             </div>
+            <div>
+              <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">Kode Hal</p>
+              <p className="font-medium text-gray-800">{surat.kode_hal?.kode} — {surat.kode_hal?.nama}</p>
+            </div>
+            {surat.created_at && (
+              <div>
+                <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">Dibuat</p>
+                <p className="text-gray-600">{surat.created_at_date}</p>
+              </div>
+            )}
           </div>
 
           {/* Riwayat status */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">Riwayat Status</h3>
-            <SuratLogTimeline logs={surat.logs} />
-          </div>
+          {surat.log?.length > 0 && (
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+              <h3 className="text-sm font-semibold text-gray-900 mb-4">Riwayat Status</h3>
+              <SuratLogTimeline logs={surat.log} />
+            </div>
+          )}
         </div>
       </div>
 
       <ConfirmDialog
-        isOpen={showConfirm}
-        onClose={() => setShowConfirm(false)}
-        onConfirm={() => setShowConfirm(false)}
+        isOpen={!!confirmAction && confirmAction !== 'sign'}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={handleConfirm}
         title={
-          confirmAction === 'delete' ? 'Hapus Surat' :
-          confirmAction === 'approve' ? 'Setujui Surat' :
-          confirmAction === 'reject' ? 'Tolak Surat' :
-          confirmAction === 'sign' ? 'Tandatangani Surat' : 'Konfirmasi'
+          confirmAction === 'delete'   ? 'Hapus Surat' :
+          confirmAction === 'approve'  ? 'Setujui Surat' :
+          (confirmAction === 'reject' || confirmAction === 'rejectKajur') ? 'Tolak Surat' :
+          confirmAction === 'resubmit' ? 'Kirim ke Verifikator' : 'Konfirmasi'
         }
         message={
-          confirmAction === 'sign'
-            ? 'Surat akan langsung diterbitkan. Tindakan ini tidak dapat dibatalkan.'
+          (confirmAction === 'reject' || confirmAction === 'rejectKajur')
+            ? 'Surat akan dikembalikan ke pembuat dengan catatan penolakan.'
             : 'Apakah Anda yakin melanjutkan tindakan ini?'
         }
-        variant={confirmAction === 'delete' || confirmAction === 'reject' ? 'danger' : 'primary'}
+        variant={confirmAction === 'delete' || confirmAction === 'reject' || confirmAction === 'rejectKajur' ? 'danger' : 'primary'}
         confirmText="Ya, Lanjutkan"
+        loading={isMutating}
+      />
+
+      <SignModal
+        isOpen={confirmAction === 'sign'}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={handleConfirm}
+        loading={ttdMutation.isPending}
       />
     </div>
   );

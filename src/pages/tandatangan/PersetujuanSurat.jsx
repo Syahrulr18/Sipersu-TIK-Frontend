@@ -6,81 +6,57 @@ import {
   XCircle,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
-import FileUpload from '@/components/ui/FileUpload';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import Skeleton from '@/components/ui/Skeleton';
 import Breadcrumb from '@/components/layout/Breadcrumb';
-import { formatTanggalSurat } from '@/utils/formatDate';
-
-const demoSurat = {
-  id: 2,
-  nomor_surat: null,  // Nomor surat diberikan SETELAH Kajur setuju
-  lampiran: '1 berkas',
-  hal: 'Undangan Rapat Koordinasi',
-  kode_hal: 'KL.01.00',
-  status: 'Menunggu Persetujuan Kajur',  // Belum disetujui Kajur
-  created_at: '2026-02-02',
-  tujuan: [
-    'Kepada Yth.',
-    'Para Dosen',
-    'Jurusan Teknik Informatika dan Komputer',
-    'Di -',
-    'Tempat',
-  ],
-  salam_pembuka: "Assalamu'alaikum Warahmatullahi Wabarakatuh.",
-  konten: [
-    "Puji dan syukur kita panjatkan kehadirat Allah Subhaanahu Wa Ta'ala yang telah melimpahkan rahmat-Nya kepada kita semua, sehingga kita masih diberi kesehatan dan perlindungan-Nya.",
-    "Sehubungan dengan persiapan kegiatan akademik semester genap 2026/2027, kami mengundang Bapak/Ibu Dosen Jurusan Teknik Informatika dan Komputer untuk menghadiri rapat koordinasi jurusan yang akan dilaksanakan dalam waktu dekat.",
-    "Mengingat pentingnya kehadiran Bapak/Ibu dalam rapat tersebut, kami mohon kiranya dapat meluangkan waktu untuk hadir tepat waktu.",
-  ],
-  jadwal: {
-    waktu: 'Senin, 10 Februari 2026, Pukul 09.00 WITA',
-    lokasi: 'Ruang Rapat Jurusan Teknik Informatika dan Komputer',
-  },
-  penutup: 'Demikian undangan ini kami sampaikan, atas perhatian dan kehadiran Bapak/Ibu kami ucapkan terima kasih.',
-  salam_penutup: "Wassalamu'alaikum Warahmatullahi Wabarakatuh.",
-  penanda_tangan: {
-    nama_lengkap: 'Prof. Budi Santoso, S.T., M.Kom',
-    nip: '197505152003121001',
-    jabatan: 'Ketua Jurusan\nTeknik Informatika dan Komputer,',
-  },
-  file_lampiran: [
-    { nama: 'Agenda_Rapat.pdf', ukuran: '120 KB' },
-    { nama: 'Daftar_Hadir.docx', ukuran: '86 KB' },
-  ],
-};
+import { useSuratDetail, useTandatanganSurat } from '@/hooks/useSurat';
 
 const PersetujuanSurat = () => {
   const { id } = useParams();
   const [action, setAction] = useState(null);
-  const [files, setFiles] = useState([]);
-  const [catatan, setCatatan] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState('');
 
-  const surat = demoSurat;
+  const { data, isLoading } = useSuratDetail(id);
+  const surat = data?.data;
+
+  const ttdMutation = useTandatanganSurat(id);
+
   const isApprove = action === 'approve';
   const isReject = action === 'reject';
-  const canSubmit = isApprove ? files.length > 0 : isReject ? catatan.trim().length > 0 : false;
 
   const handleSubmit = () => {
-    if (!canSubmit) return;
+    if (!action) return;
     setShowConfirm(true);
   };
 
   const handleConfirm = () => {
-    setShowConfirm(false);
-    setIsSubmitting(true);
-    setMessage('');
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setMessage(
-        isApprove
-          ? 'Draft berhasil disetujui dan dikirim. Tanda tangan digital tersimpan.'
-          : 'Draft berhasil ditolak dan catatan pengembalian telah disimpan.'
-      );
-    }, 800);
+    // Untuk saat ini, sign langsung (tanpa upload TTD file)
+    // Backend generate nomor surat otomatis
+    ttdMutation.mutate(undefined, {
+      onSuccess: () => {
+        setShowConfirm(false);
+        setAction(null);
+      },
+    });
   };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-5xl mx-auto py-8 space-y-4">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-[500px] w-full" />
+      </div>
+    );
+  }
+
+  if (!surat) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        Surat tidak ditemukan.
+        <Link to="/tandatangan" className="text-[#8B0000] text-sm mt-2 block">← Kembali</Link>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4">

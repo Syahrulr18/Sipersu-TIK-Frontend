@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Upload, FileText, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useQuery } from '@tanstack/react-query';
 import Modal from '@/components/ui/Modal';
 import SearchSelect from '@/components/ui/SearchSelect';
+import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
+import { getPenandaTangan, getVerifikator } from '@/api/master.api';
 
 /**
  * ModalUploadWordSurat — Upload file Word (.docx) dan extract data
@@ -25,7 +28,33 @@ const ModalUploadWordSurat = ({ isOpen, onClose, onUpload }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [filePreview, setFilePreview] = useState(null);
-  const [selectedTujuan, setSelectedTujuan] = useState(null);
+  const [selectedTujuan, setSelectedTujuan] = useState([]);
+  const [selectedPenandaTangan, setSelectedPenandaTangan] = useState('');
+  const [selectedVerifikator, setSelectedVerifikator] = useState('');
+
+  // Fetch penanda tangan dari API
+  const { data: penandaTanganData } = useQuery({
+    queryKey: ['penanda-tangan'],
+    queryFn: () => getPenandaTangan().then((r) => r.data?.data || []),
+    enabled: isOpen,
+  });
+
+  // Fetch verifikator dari API
+  const { data: verifikatorData } = useQuery({
+    queryKey: ['verifikator'],
+    queryFn: () => getVerifikator().then((r) => r.data?.data || []),
+    enabled: isOpen,
+  });
+
+  const penandaTanganOptions = (penandaTanganData || []).map((u) => ({
+    value: String(u.id),
+    label: `${u.nama_lengkap}${u.jabatan ? ` — ${u.jabatan}` : ''}`,
+  }));
+
+  const verifikatorOptions = (verifikatorData || []).map((u) => ({
+    value: String(u.id),
+    label: `${u.nama_lengkap}${u.jabatan ? ` — ${u.jabatan}` : ''}`,
+  }));
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
@@ -75,10 +104,13 @@ const ModalUploadWordSurat = ({ isOpen, onClose, onUpload }) => {
       const extractedData = extractDataFromText(text);
 
       // Override tujuan jika user sudah memilih dari dropdown
-      if (selectedTujuan) {
-        extractedData.tujuan = selectedTujuan.nama_lengkap;
-        extractedData.tujuan_dosen_id = selectedTujuan.id;
+      if (selectedTujuan && selectedTujuan.length > 0) {
+        extractedData.tujuan_dosen_list = selectedTujuan;
       }
+
+      // Masukkan penandatangan, verifikator
+      if (selectedPenandaTangan) extractedData.penanda_tangan_id = selectedPenandaTangan;
+      if (selectedVerifikator) extractedData.verifikator_id = selectedVerifikator;
 
       // Panggil callback dengan data yang diextract
       onUpload(extractedData);
@@ -94,44 +126,97 @@ const ModalUploadWordSurat = ({ isOpen, onClose, onUpload }) => {
   };
 
   const extractDataFromText = (text) => {
-    // Extract informasi dari text dokumen Word
-    // Ini adalah contoh parsing sederhana
-
     const lines = text.split('\n').filter(l => l.trim());
 
-    // Cari perihal/hal (biasanya setelah kata "Perihal:" atau "Hal:")
     let hal = '';
     let ringkasan = '';
-    let tujuan = '';
+    let kode_hal = '';
+
+    // === FASE 1: Cari metadata (Nomor, Perihal, Kepada) ===
+    let perihalIndex = -1;
+    let kepadaIndex = -1;
 
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].toLowerCase();
-      if (line.includes('perihal:') || line.includes('hal:')) {
-        hal = lines[i].replace(/perihal:|hal:/gi, '').trim();
-        // Ambil beberapa baris ke depan untuk ringkasan
-        if (i + 1 < lines.length) {
-          ringkasan = lines.slice(i + 1, Math.min(i + 4, lines.length))
-            .join(' ')
-            .substring(0, 200);
+      const line = lines[i];
+      const lowerLine = line.toLowerCase().trim();
+
+      // Cari nomor surat untuk kode hal (contoh: M.002/9/KL.01.00/2026)
+      if (lowerLine.match(/^nomor\s*:/) || lowerLine.match(/^no\.\s*:/)) {
+        const kodeHalMatch = line.match(/([A-Z]{2}\.\d{2}\.\d{2})/i);
+        if (kodeHalMatch) {
+          kode_hal = kodeHalMatch[1].toUpperCase();
         }
+      }
+
+      // Cari perihal/hal
+      if (lowerLine.match(/^(?:perihal|hal)\s*:/)) {
+        hal = line.replace(/^(?:perihal|hal)\s*:/i, '').trim();
+        perihalIndex = i;
+      }
+
+      // Cari kepada
+      if (lowerLine.match(/^kepada\s/) || lowerLine === 'kepada yth.' || lowerLine === 'kepada yth') {
+        kepadaIndex = i;
+      }
+    }
+
+    // === FASE 2: Tentukan awal isi surat (setelah blok alamat) ===
+    // Blok alamat biasanya setelah "Kepada Yth." sampai "Di- Tempat"
+    let bodyStartIndex = Math.max(perihalIndex, kepadaIndex) + 1;
+
+    // Cari akhir blok alamat (baris "Di-  Tempat" atau sejenisnya)
+    for (let i = bodyStartIndex; i < lines.length; i++) {
+      const l = lines[i].toLowerCase().trim();
+      if (l === 'tempat' || l === 'di- tempat' || l === 'di -  tempat' || l === 'di-') {
+        bodyStartIndex = i + 1;
+        break;
+      }
+      // Jika sudah menemukan kalimat panjang (paragraf), ini sudah body
+      if (l.length > 50 && !l.includes('yth') && !l.includes('politeknik') && !l.includes('jurusan')) {
+        bodyStartIndex = i;
         break;
       }
     }
 
-    // Cari tujuan/kepada
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].toLowerCase();
-      if (line.includes('kepada') || line.includes('tujuan')) {
-        tujuan = lines[i].replace(/kepada:|tujuan:/gi, '').trim();
+    // === FASE 3: Tentukan akhir isi surat (sebelum tanda tangan) ===
+    let bodyEndIndex = lines.length;
+    for (let i = bodyStartIndex; i < lines.length; i++) {
+      const l = lines[i].toLowerCase().trim();
+      // Deteksi blok tanda tangan / penutup jabatan
+      if (
+        l.match(/^(ketua jurusan|kepala|dekan|direktur|rektor|sekretaris|koordinator)/i) ||
+        l.match(/^(hormat kami|yang membuat|mengetahui)/i) ||
+        l.match(/^nip[\s.:]/i) ||
+        l.match(/^\d{18,}/) // NIP panjang
+      ) {
+        bodyEndIndex = i;
         break;
       }
     }
+
+    // === FASE 4: Ambil semua baris body sebagai ringkasan ===
+    const bodyLines = lines.slice(bodyStartIndex, bodyEndIndex)
+      .map(l => l.trim())
+      .filter(l => {
+        const lower = l.toLowerCase();
+        // Filter baris kosong pendek dan sisa header
+        return l.length > 0 &&
+          !lower.includes('yth') &&
+          !lower.startsWith('kepada') &&
+          !lower.includes('politeknik negeri') &&
+          lower !== 'di-' &&
+          lower !== 'tempat' &&
+          lower !== 'di - tempat' &&
+          lower !== 'di-  tempat';
+      });
+
+    ringkasan = bodyLines.join('\n').trim();
 
     return {
-      hal: hal || 'Data dari upload Word',
-      ringkasan: ringkasan || text.substring(0, 200),
-      tujuan: tujuan,
-      fullText: text, // Simpan full text untuk referensi
+      hal: hal || '',
+      ringkasan: ringkasan || '',
+      kode_hal: kode_hal,
+      fullText: text,
     };
   };
 
@@ -219,7 +304,26 @@ const ModalUploadWordSurat = ({ isOpen, onClose, onUpload }) => {
           selected={selectedTujuan}
           onChange={setSelectedTujuan}
           placeholder="Pilih dosen penerima..."
+          isMulti={true}
         />
+
+        <div className="grid grid-cols-2 gap-4">
+          <Select
+            label="Penanda Tangan"
+            options={penandaTanganOptions}
+            value={selectedPenandaTangan}
+            onChange={(e) => setSelectedPenandaTangan(e.target.value)}
+            placeholder="Pilih penanda tangan..."
+          />
+
+          <Select
+            label="Verifikator"
+            options={verifikatorOptions}
+            value={selectedVerifikator}
+            onChange={(e) => setSelectedVerifikator(e.target.value)}
+            placeholder="Pilih verifikator..."
+          />
+        </div>
 
         {/* Instruksi */}
         <div className="p-3 bg-gray-50 rounded-lg text-xs text-gray-600 space-y-1">

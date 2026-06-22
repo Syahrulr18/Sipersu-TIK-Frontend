@@ -49,8 +49,12 @@ export const useCreateSurat = () => {
  * @param {number|string} id
  */
 export const useUpdateKonten = (id) => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data) => suratApi.updateKonten(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['surat'] });
+    }
   });
 };
 
@@ -84,7 +88,7 @@ export const useVerifikasiSurat = (id) => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['surat'] });
       queryClient.invalidateQueries({ queryKey: ['verifikasi'] });
-      const msg = variables.status === 'diverifikasi'
+      const msg = variables.aksi === 'setuju'
         ? 'Surat berhasil diverifikasi'
         : 'Surat ditolak';
       toast.success(msg);
@@ -100,29 +104,30 @@ export const useTandatanganSurat = (id) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => suratApi.tandatanganSurat(id),
-    onSuccess: () => {
+    mutationFn: (data) => suratApi.tandatanganSurat(id, data),
+    onSuccess: (res, variables) => {
       queryClient.invalidateQueries({ queryKey: ['surat'] });
       queryClient.invalidateQueries({ queryKey: ['tandatangan'] });
-      toast.success('Surat berhasil ditandatangani & diterbitkan');
+      
+      const msg = variables?.aksi === 'tolak'
+        ? 'Surat ditolak oleh Kajur'
+        : 'Surat berhasil ditandatangani & diterbitkan';
+      toast.success(msg);
     },
   });
 };
 
 /**
  * Hook to delete surat.
- * @param {number|string} id
  */
-export const useDeleteSurat = (id) => {
+export const useDeleteSurat = () => {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
 
   return useMutation({
-    mutationFn: () => suratApi.deleteSurat(id),
+    mutationFn: (id) => suratApi.deleteSurat(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['surat'] });
       toast.success('Surat berhasil dihapus');
-      navigate('/surat');
     },
   });
 };
@@ -130,19 +135,21 @@ export const useDeleteSurat = (id) => {
 /**
  * Hook to fetch antrian verifikasi list.
  */
-export const useAntrianVerifikasi = (params = {}) => {
+export const useAntrianVerifikasi = (params = {}, options = {}) => {
   return useQuery({
     queryKey: ['verifikasi', params],
     queryFn: () => suratApi.getAntrianVerifikasi(params).then((r) => r.data),
+    ...options,
   });
 };
 
 /**
  * Hook to fetch antrian tanda tangan list.
  */
-export const useAntrianTandaTangan = (params = {}) => {
+export const useAntrianTandaTangan = (params = {}, options = {}) => {
   return useQuery({
     queryKey: ['tandatangan', params],
     queryFn: () => suratApi.getAntrianTandaTangan(params).then((r) => r.data),
+    ...options,
   });
 };

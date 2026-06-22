@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Save, RotateCcw } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
@@ -11,69 +12,52 @@ import Textarea from '@/components/ui/Textarea';
 import GroupedSelect from '@/components/ui/GroupedSelect';
 import FileUpload from '@/components/ui/FileUpload';
 import Button from '@/components/ui/Button';
-import { useEffect } from 'react';
+import { useCreateSurat } from '@/hooks/useSurat';
+import { getPenandaTangan, getVerifikator } from '@/api/master.api';
 
 const suratSchema = z.object({
   penanda_tangan_id: z.string().min(1, 'Pilih penanda tangan'),
   verifikator_id: z.string().min(1, 'Pilih verifikator'),
-  tujuan_dosen_id: z.string().min(1, 'Pilih tujuan dosen'),
+  tujuan_dosen_id: z.array(z.string()).min(1, 'Pilih minimal 1 tujuan dosen'),
   kode_hal: z.string().min(1, 'Pilih kode hal'),
   hal: z.string().min(3, 'Minimal 3 karakter').max(500, 'Maksimal 500 karakter'),
   ringkasan: z.string().min(10, 'Minimal 10 karakter'),
 });
 
-const demoPenandaTangan = [
-  { value: '1', label: 'Prof. Budi Santoso, S.T., M.Kom — Ketua Jurusan' },
-  { value: '2', label: 'Dr. Ahmad Wahyudi, M.T. — Wakil Ketua Jurusan' },
-];
-
-const demoVerifikator = [
-  { value: '1', label: 'Dr. Ahmad Verifikator — Sekretaris Jurusan' },
-  { value: '2', label: 'Ir. Siti Rahayu, M.T. — Koordinator Prodi' },
-];
-
-// Demo data dosen (same as SearchSelect.DOSEN_LIST for consistency)
-const demoDosen = [
-  { id: 10, nama_lengkap: 'Dr. Andi Pratama, M.Kom', jabatan: 'Dosen Tetap', status: 'Dosen Tetap' },
-  { id: 11, nama_lengkap: 'Ir. Fatimah Zahra, M.T.', jabatan: 'Dosen Tetap', status: 'Dosen Tetap' },
-  { id: 12, nama_lengkap: 'Muh. Rizky Aditya, S.Kom., M.Cs.', jabatan: 'Dosen Tetap', status: 'Dosen Tetap' },
-  { id: 13, nama_lengkap: 'Dr. Siti Nurhaliza, M.T.', jabatan: 'Dosen Tetap', status: 'Dosen Tetap' },
-  { id: 14, nama_lengkap: 'Ir. Budi Handoko, M.Eng.', jabatan: 'Dosen Tetap', status: 'Dosen Tetap' },
-  { id: 15, nama_lengkap: 'Prof. Ahmad Mulyanto, Ph.D.', jabatan: 'Dosen Tetap', status: 'Dosen Tetap' },
-  { id: 20, nama_lengkap: 'Bambang Suryanto, S.T.', jabatan: 'Dosen Honorer', status: 'Dosen Honorer' },
-  { id: 21, nama_lengkap: 'Dewi Lestari, S.Kom.', jabatan: 'Dosen Honorer', status: 'Dosen Honorer' },
-];
-
-/**
- * Helper function: find matching dosen by tujuan text
- * Tries to match extracted tujuan text with dosen in demoDosen list
- */
-const findDosenByName = (tujuanText) => {
-  if (!tujuanText || typeof tujuanText !== 'string') return null;
-  
-  const searchText = tujuanText.toLowerCase().trim();
-  
-  // Exact match on full name
-  let match = demoDosen.find(d => d.nama_lengkap.toLowerCase() === searchText);
-  if (match) return match;
-  
-  // Partial match: check if any part of dosen name is in tujuan text
-  match = demoDosen.find(d => 
-    searchText.includes(d.nama_lengkap.toLowerCase()) ||
-    d.nama_lengkap.toLowerCase().includes(searchText)
-  );
-  
-  return match || null;
-};
-
 /**
  * ModalTambahSurat — 2-column form for creating new surat.
- * Bisa menerima initialData dari upload Word
+ * Data penanda tangan, verifikator, dosen, dan kode hal diambil dari API.
  */
 const ModalTambahSurat = ({ isOpen, onClose, initialData }) => {
   const [files, setFiles] = useState([]);
-  const [tujuanDosen, setTujuanDosen] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [tujuanDosen, setTujuanDosen] = useState([]);
+
+  const createSurat = useCreateSurat();
+
+  // Fetch penanda tangan dari API
+  const { data: penandaTanganData } = useQuery({
+    queryKey: ['penanda-tangan'],
+    queryFn: () => getPenandaTangan().then((r) => r.data?.data || []),
+    enabled: isOpen,
+  });
+
+  // Fetch verifikator dari API
+  const { data: verifikatorData } = useQuery({
+    queryKey: ['verifikator'],
+    queryFn: () => getVerifikator().then((r) => r.data?.data || []),
+    enabled: isOpen,
+  });
+
+  // Format untuk Select component: { value: 'id', label: 'nama — jabatan' }
+  const penandaTanganOptions = (penandaTanganData || []).map((u) => ({
+    value: String(u.id),
+    label: `${u.nama_lengkap}${u.jabatan ? ` — ${u.jabatan}` : ''}`,
+  }));
+
+  const verifikatorOptions = (verifikatorData || []).map((u) => ({
+    value: String(u.id),
+    label: `${u.nama_lengkap}${u.jabatan ? ` — ${u.jabatan}` : ''}`,
+  }));
 
   const {
     register, handleSubmit, control, reset, watch, setValue,
@@ -81,50 +65,78 @@ const ModalTambahSurat = ({ isOpen, onClose, initialData }) => {
   } = useForm({
     resolver: zodResolver(suratSchema),
     defaultValues: {
-      penanda_tangan_id: '', verifikator_id: '', tujuan_dosen_id: '',
+      penanda_tangan_id: '', verifikator_id: '', tujuan_dosen_id: [],
       kode_hal: '', hal: initialData?.hal || '', ringkasan: initialData?.ringkasan || '',
     },
   });
 
   const halValue = watch('hal') || '';
 
-  // Auto-populate form dari data Word upload
+  // Auto-populate dari data Word upload
   useEffect(() => {
     if (initialData && isOpen) {
       setValue('hal', initialData.hal || '');
       setValue('ringkasan', initialData.ringkasan || '');
       
-      // Auto-populate tujuan dosen jika ada di extracted data
-      if (initialData.tujuan) {
-        const matchedDosen = findDosenByName(initialData.tujuan);
-        if (matchedDosen) {
-          setTujuanDosen(matchedDosen);
-          setValue('tujuan_dosen_id', String(matchedDosen.id));
-        }
+      if (initialData.penanda_tangan_id) {
+        setValue('penanda_tangan_id', initialData.penanda_tangan_id);
       }
+      if (initialData.verifikator_id) {
+        setValue('verifikator_id', initialData.verifikator_id);
+      }
+      if (initialData.kode_hal) {
+        setValue('kode_hal', initialData.kode_hal);
+      }
+      
+      if (initialData.tujuan_dosen_list && initialData.tujuan_dosen_list.length > 0) {
+        setTujuanDosen(initialData.tujuan_dosen_list);
+      } else if (initialData.tujuan_dosen_id) {
+        setTujuanDosen([{ id: initialData.tujuan_dosen_id, nama_lengkap: initialData.tujuan }]);
+      }
+      
+      // Kosongkan lampiran saat upload Word (file Word bukan lampiran)
+      setFiles([]);
+    } else if (!isOpen) {
+      // Reset files when closed
+      setFiles([]);
+      setTujuanDosen([]);
     }
   }, [initialData, isOpen, setValue]);
 
-  // Update form saat tujuan dosen berubah
+  // Sync tujuan dosen ke form
   useEffect(() => {
-    if (tujuanDosen?.id) {
-      setValue('tujuan_dosen_id', String(tujuanDosen.id));
+    if (tujuanDosen && tujuanDosen.length > 0) {
+      setValue('tujuan_dosen_id', tujuanDosen.map(d => String(d.id)));
+    } else {
+      setValue('tujuan_dosen_id', '');
     }
   }, [tujuanDosen, setValue]);
 
   const onSubmit = async (data) => {
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      handleReset();
-      onClose();
-    }, 1000);
+    const formData = new FormData();
+    Object.entries(data).forEach(([k, v]) => {
+      if (Array.isArray(v)) {
+        v.forEach(val => formData.append(`${k}[]`, val));
+      } else {
+        formData.append(k, v);
+      }
+    });
+    files.forEach((file) => formData.append('lampiran[]', file));
+    createSurat.mutate(formData, {
+      onSuccess: () => {
+        handleReset();
+        onClose();
+      },
+    });
   };
 
   const handleReset = () => {
-    reset();
+    reset({
+      penanda_tangan_id: '', verifikator_id: '', tujuan_dosen_id: '',
+      kode_hal: '', hal: '', ringkasan: '',
+    });
     setFiles([]);
-    setTujuanDosen(null);
+    setTujuanDosen([]);
   };
 
   const footer = (
@@ -135,7 +147,7 @@ const ModalTambahSurat = ({ isOpen, onClose, initialData }) => {
       <Button
         variant="primary"
         onClick={handleSubmit(onSubmit)}
-        loading={isSubmitting}
+        loading={createSurat.isPending}
         icon={<Save className="w-4 h-4" />}
       >
         Save Draft
@@ -145,15 +157,12 @@ const ModalTambahSurat = ({ isOpen, onClose, initialData }) => {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Tambah Surat Baru" size="xl" footer={footer}>
-      {/* Info Box jika data dari Word */}
       {initialData && (
         <div className="mb-6 p-3 bg-green-50 border border-green-200 rounded-lg flex gap-2">
           <span className="text-green-700 text-xs font-semibold flex-shrink-0 mt-0.5">✓</span>
           <div className="text-xs text-green-700">
             <p className="font-semibold">Data dari Upload Word</p>
-            <p className="mt-0.5">
-              Perihal, ringkasan, dan tujuan sudah otomatis terisi. {!tujuanDosen && 'Silakan lengkapi field yang masih kosong.'}
-            </p>
+            <p className="mt-0.5">Perihal dan ringkasan sudah otomatis terisi.</p>
           </div>
         </div>
       )}
@@ -164,14 +173,14 @@ const ModalTambahSurat = ({ isOpen, onClose, initialData }) => {
           <Select
             label="Penanda Tangan"
             placeholder="Pilih Penanda Tangan..."
-            options={demoPenandaTangan}
+            options={penandaTanganOptions}
             error={errors.penanda_tangan_id?.message}
             {...register('penanda_tangan_id')}
           />
           <Select
             label="Verifikator"
             placeholder="Pilih Verifikator..."
-            options={demoVerifikator}
+            options={verifikatorOptions}
             error={errors.verifikator_id?.message}
             {...register('verifikator_id')}
           />
@@ -185,6 +194,7 @@ const ModalTambahSurat = ({ isOpen, onClose, initialData }) => {
                 onChange={setTujuanDosen}
                 error={errors.tujuan_dosen_id?.message}
                 placeholder="Cari Dosen..."
+                isMulti={true}
               />
             )}
           />

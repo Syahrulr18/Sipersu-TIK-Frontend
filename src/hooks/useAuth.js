@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import * as authApi from '@/api/auth.api';
@@ -31,16 +31,20 @@ export const useLogin = () => {
  */
 export const useLogout = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const logoutStore = useAuthStore((s) => s.logout);
 
   return useMutation({
     mutationFn: authApi.logout,
     onSuccess: () => {
+      queryClient.clear();
       logoutStore();
+      toast.success('Berhasil logout');
       navigate('/login');
     },
     onError: () => {
       // Force logout even on error
+      queryClient.clear();
       logoutStore();
       navigate('/login');
     },

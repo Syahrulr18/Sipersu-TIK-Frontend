@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useLogout } from '@/hooks/useAuth';
 import useAuthStore from '@/store/authStore';
 import { getSidebarMenu, ROLES } from '@/utils/roleHelper';
+import { useAntrianVerifikasi, useAntrianTandaTangan } from '@/hooks/useSurat';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import {
   Home, Send, Bell, User, BookOpen, HelpCircle,
   ClipboardCheck, PenTool, LogOut, Mail
@@ -17,17 +20,28 @@ const iconMap = {
  */
 const Sidebar = () => {
   const user = useAuthStore((s) => s.user);
-  const { mutate: logout } = useLogout();
+  const { mutate: logout, isPending: isLoggingOut } = useLogout();
   const location = useLocation();
   const role = user?.role || 'dosen';
   const menuGroups = getSidebarMenu(role);
+  
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const isVerifikatorUser = role === ROLES.VERIFIKATOR;
+  const isKajurUser = role === ROLES.KAJUR;
+
+  const { data: verifikasiData } = useAntrianVerifikasi({}, { enabled: isVerifikatorUser });
+  const { data: ttdData } = useAntrianTandaTangan({}, { enabled: isKajurUser });
+
+  const verifikasiCount = verifikasiData?.data?.length || 0;
+  const ttdCount = ttdData?.data?.length || 0;
 
   return (
     <aside className="w-[240px] h-screen bg-white border-r border-gray-200 flex flex-col fixed left-0 top-0 z-40">
       {/* Logo header — dark red */}
       <div className="bg-[#8B0000] px-5 py-4 flex items-center gap-3">
-        <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
-          <Mail className="w-5 h-5 text-white" />
+        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center p-1">
+          <img src="/logo_PNUP.png" alt="Logo PNUP" className="w-full h-full object-contain" />
         </div>
         <div>
           <h1 className="text-white font-bold text-sm tracking-wide">SIPERSU TIK</h1>
@@ -38,8 +52,14 @@ const Sidebar = () => {
       {/* User avatar section */}
       <div className="px-4 py-4 border-b border-gray-100">
         <div className="flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2.5">
-          <div className="w-10 h-10 bg-[#8B0000] rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-            {user?.nama_lengkap?.charAt(0)?.toUpperCase() || 'U'}
+          <div className="relative w-10 h-10 flex-shrink-0">
+            {user?.foto_url ? (
+              <img src={user.foto_url} alt="Profile" className="w-10 h-10 rounded-full object-cover bg-gray-200" />
+            ) : (
+              <div className="w-10 h-10 bg-[#8B0000] rounded-full flex items-center justify-center text-white font-bold text-sm">
+                {user?.nama_lengkap?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+            )}
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-gray-900 truncate">
@@ -63,9 +83,16 @@ const Sidebar = () => {
               {group.items.map((item) => {
                 const Icon = iconMap[item.icon] || Home;
                 const isDashboardLink = item.path === '/dashboard';
+                const isSuratDetail = location.pathname.startsWith('/surat/');
                 const isActive = location.pathname === item.path ||
-                  (item.path !== '/dashboard' && location.pathname.startsWith(item.path)) ||
-                  (isDashboardLink && role === ROLES.DOSEN && location.pathname.startsWith('/surat'));
+                  (item.path !== '/dashboard' && !isSuratDetail && location.pathname.startsWith(item.path)) ||
+                  (isDashboardLink && isSuratDetail);
+
+                let showBadge = false;
+                if (item.badge) {
+                  if (item.path === '/verifikasi' && verifikasiCount > 0) showBadge = true;
+                  if (item.path === '/tandatangan' && ttdCount > 0) showBadge = true;
+                }
 
                 return (
                   <li key={item.path}>
@@ -82,7 +109,7 @@ const Sidebar = () => {
                     >
                       <Icon className="w-[18px] h-[18px] flex-shrink-0" />
                       <span className="truncate">{item.label}</span>
-                      {item.badge && (
+                      {showBadge && (
                         <span className="ml-auto w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                           !
                         </span>
@@ -99,13 +126,28 @@ const Sidebar = () => {
       {/* Logout */}
       <div className="px-3 pb-4 border-t border-gray-100 pt-3">
         <button
-          onClick={() => logout()}
+          onClick={() => setShowLogoutConfirm(true)}
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 w-full transition-colors"
         >
           <LogOut className="w-[18px] h-[18px]" />
           <span>Keluar</span>
         </button>
       </div>
+
+      <ConfirmDialog
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={() => {
+          setShowLogoutConfirm(false);
+          logout();
+        }}
+        title="Konfirmasi Keluar"
+        message="Apakah Anda yakin ingin keluar dari sistem?"
+        confirmText="Ya, Keluar"
+        cancelText="Batal"
+        variant="danger"
+        loading={isLoggingOut}
+      />
     </aside>
   );
 };

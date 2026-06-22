@@ -57,8 +57,8 @@ const SuratLogTimeline = ({ logs = [] }) => {
         <div key={index} className="flex gap-3">
           {/* Timeline line + dot */}
           <div className="flex flex-col items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getDotColor(log.status)}`}>
-              {getIcon(log.status)}
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getDotColor(log.status_sesudah)}`}>
+              {getIcon(log.status_sesudah)}
             </div>
             {index < logs.length - 1 && (
               <div className="w-0.5 h-full min-h-[40px] bg-gray-200" />
@@ -68,10 +68,10 @@ const SuratLogTimeline = ({ logs = [] }) => {
           {/* Content */}
           <div className="pb-6">
             <p className="text-sm font-medium text-gray-900">
-              {getStatusLabel(log.status)}
+              {getStatusLabel(log.status_sesudah)}
             </p>
             <p className="text-xs text-gray-500 mt-0.5">
-              {log.user_name} • {formatTanggalFull(log.tanggal)}
+              {log.user?.nama_lengkap} • {log.created_at || ''}
             </p>
             {log.catatan && (
               <p className="text-xs text-gray-500 mt-1 bg-gray-50 rounded-md px-3 py-2 border-l-2 border-gray-300">

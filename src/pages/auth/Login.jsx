@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { User, Lock, ArrowRight, Mail } from 'lucide-react';
+import { User, Lock, ArrowRight, Mail, AlertTriangle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import Modal from '@/components/ui/Modal';
 import { useLogin } from '@/hooks/useAuth';
 import useAuthStore from '@/store/authStore';
 
@@ -23,6 +24,8 @@ const Login = () => {
   const loginStore = useAuthStore((s) => s.login);
   const { mutate: loginApi, isPending } = useLogin();
 
+  const [loginError, setLoginError] = useState('');
+
   const {
     register,
     handleSubmit,
@@ -33,7 +36,12 @@ const Login = () => {
   });
 
   const onSubmit = (data) => {
-    loginApi(data);
+    loginApi(data, {
+      onError: (error) => {
+        const msg = error.response?.data?.message || 'Terjadi kesalahan saat login';
+        setLoginError(msg);
+      }
+    });
   };
 
   // Demo login for testing without backend
@@ -87,9 +95,7 @@ const Login = () => {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-8 py-10">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 bg-[#8B0000]/10 rounded-xl flex items-center justify-center mb-3">
-            <Mail className="w-7 h-7 text-[#8B0000]" />
-          </div>
+          <img src="/logo_PNUP.png" alt="Logo PNUP" className="w-16 h-16 object-contain mb-3" />
           <h1 className="text-xl font-bold text-gray-900 tracking-wide">
             SIPERSU TIK PNUP
           </h1>
@@ -124,31 +130,46 @@ const Login = () => {
           </Button>
         </form>
 
-        {/* Demo login buttons */}
-        <div className="mt-6 pt-5 border-t border-gray-100">
-          <p className="text-[10px] text-gray-400 text-center uppercase tracking-wider mb-3">
-            Demo Login (tanpa backend)
+        {/* Footer info */}
+        <div className="mt-6 pt-5 border-t border-gray-100 text-center">
+          <p className="text-[11px] text-gray-400 mb-2">
+            Gunakan NIP dan password akun Anda untuk masuk.<br/>
+            Hubungi administrator jika mengalami kendala.
           </p>
-          <div className="grid grid-cols-2 gap-2">
-            {['administrator', 'verifikator', 'kajur', 'dosen'].map((role) => (
-              <button
-                key={role}
-                type="button"
-                onClick={() => handleDemoLogin(role)}
-                className="px-3 py-1.5 text-[11px] font-medium border border-gray-200 rounded-lg
-                           text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all capitalize"
-              >
-                {role}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
-      {/* Footer */}
+        {/* Footer */}
       <p className="text-center text-xs text-gray-400 mt-6">
         © 2026 SIPERSU TIK PNUP
       </p>
+
+      {/* Error Overlay */}
+      <Modal
+        isOpen={!!loginError}
+        onClose={() => setLoginError('')}
+        title="Login Gagal"
+        size="sm"
+        footer={
+          <div className="flex justify-end w-full">
+            <Button onClick={() => setLoginError('')} variant="primary">
+              Mengerti
+            </Button>
+          </div>
+        }
+      >
+        <div className="flex flex-col items-center justify-center py-4">
+          <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4">
+            <AlertTriangle className="w-8 h-8" />
+          </div>
+          <p className="text-gray-600 text-center mb-2">
+            Peringatan:
+          </p>
+          <p className="text-gray-900 font-medium text-center">
+            {loginError || 'NIP atau Password yang Anda masukkan salah.'}
+          </p>
+        </div>
+      </Modal>
     </div>
   );
 };
