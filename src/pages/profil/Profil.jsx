@@ -14,6 +14,7 @@ const Profil = () => {
   const ttdInputRef = useRef(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadingTtd, setIsUploadingTtd] = useState(false);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
 
   const [passwords, setPasswords] = useState({
     current: '',
@@ -80,6 +81,37 @@ const Profil = () => {
 
   const openTtdDialog = () => {
     ttdInputRef.current?.click();
+  };
+
+  const handleSavePassword = async () => {
+    if (!passwords.current || !passwords.new_password || !passwords.confirm) {
+      toast.error('Semua kolom kata sandi wajib diisi');
+      return;
+    }
+    if (passwords.new_password !== passwords.confirm) {
+      toast.error('Kata sandi baru dan konfirmasi tidak cocok');
+      return;
+    }
+    if (passwords.new_password.length < 8) {
+      toast.error('Kata sandi minimal 8 karakter');
+      return;
+    }
+
+    setIsSavingPassword(true);
+    try {
+      const { changePassword } = await import('@/api/auth.api');
+      await changePassword({
+        current_password: passwords.current,
+        password: passwords.new_password,
+        password_confirmation: passwords.confirm
+      });
+      toast.success('Kata sandi berhasil diubah');
+      setPasswords({ current: '', new_password: '', confirm: '' });
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Gagal mengubah kata sandi');
+    } finally {
+      setIsSavingPassword(false);
+    }
   };
 
   return (
@@ -240,8 +272,10 @@ const Profil = () => {
         </div>
 
         <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
-          <Button variant="outline">Batal</Button>
-          <Button variant="primary">Simpan Perubahan</Button>
+          <Button variant="outline" onClick={() => setPasswords({ current: '', new_password: '', confirm: '' })}>Batal</Button>
+          <Button variant="primary" onClick={handleSavePassword} loading={isSavingPassword}>
+            {isSavingPassword ? 'Menyimpan...' : 'Simpan Perubahan'}
+          </Button>
         </div>
       </div>
     </div>

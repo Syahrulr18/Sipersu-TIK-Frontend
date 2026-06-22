@@ -33,6 +33,7 @@ const DetailSurat = () => {
   const [catatan, setCatatan] = useState('');
   const [confirmAction, setConfirmAction] = useState(null);
   const [selectedPenerimaIdx, setSelectedPenerimaIdx] = useState(0);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Fetch surat detail dari API
   const { data, isLoading, isError } = useSuratDetail(id);
@@ -71,6 +72,7 @@ const DetailSurat = () => {
 
   const handleDownloadPdf = async () => {
     try {
+      setIsDownloading(true);
       const activePenerimaId = (role !== 'dosen' && surat.penerima?.length > 1) 
         ? surat.penerima[selectedPenerimaIdx]?.id 
         : null;
@@ -84,6 +86,8 @@ const DetailSurat = () => {
       window.URL.revokeObjectURL(url);
     } catch {
       toast.error('Gagal mengunduh PDF');
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -407,8 +411,9 @@ const DetailSurat = () => {
 
               <Button variant="primary" fullWidth icon={<Download className="w-4 h-4" />}
                 onClick={handleDownloadPdf}
-                disabled={surat.status !== 'terbit'}>
-                Download PDF
+                disabled={surat.status !== 'terbit' || isDownloading}
+                loading={isDownloading}>
+                {isDownloading ? 'Mengunduh...' : 'Download PDF'}
               </Button>
             </div>
           </div>
