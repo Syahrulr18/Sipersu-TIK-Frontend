@@ -135,6 +135,7 @@ const EditKonten = () => {
   const role = user?.role;
 
   const [selectedIdx, setSelectedIdx] = useState(0);
+  const selectedIdxRef = useRef(0);
   const kontenStateRef = useRef([]);
 
   const generateInitialContent = (s) => {
@@ -205,9 +206,10 @@ ${ringkasanHtml}
     onUpdate: ({ editor }) => {
       setSaveStatus('saving');
       
-      // Update ref state
-      if (kontenStateRef.current[selectedIdx]) {
-        kontenStateRef.current[selectedIdx].konten_html = editor.getHTML();
+      // Update ref state menggunakan selectedIdxRef agar nilainya selalu terbaru
+      const currentIdx = selectedIdxRef.current;
+      if (kontenStateRef.current[currentIdx]) {
+        kontenStateRef.current[currentIdx].konten_html = editor.getHTML();
       }
       
       // trigger save with current array
@@ -229,6 +231,8 @@ ${ringkasanHtml}
                   penerima_id: item.penerima_id,
                   konten_html: item.konten_html
               }));
+              // Pastikan konten_html global juga diisi (fallback) agar bisa di-submit
+              payload.konten_html = dataArray[0]?.konten_html || '';
           } else {
               payload.konten_html = dataArray[0]?.konten_html || '';
           }
@@ -272,6 +276,7 @@ ${ringkasanHtml}
 
   const handleTabClick = (idx) => {
     setSelectedIdx(idx);
+    selectedIdxRef.current = idx;
     if (editor && kontenStateRef.current[idx]) {
       // Set emitUpdate = false agar tidak mentrigger onUpdate secara otomatis
       editor.commands.setContent(kontenStateRef.current[idx].konten_html, false);
@@ -308,6 +313,7 @@ ${ringkasanHtml}
             penerima_id: item.penerima_id,
             konten_html: item.konten_html
         }));
+        payload.konten_html = dataArray[0]?.konten_html || '';
     } else {
         payload.konten_html = dataArray[0]?.konten_html || '';
     }
